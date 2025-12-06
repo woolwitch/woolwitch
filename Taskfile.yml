@@ -1,0 +1,176 @@
+version: "3"
+
+vars:
+  PROJECT_NAME: wool-witch
+  NODE_VERSION: ">=18.0.0"
+
+tasks:
+  default:
+    desc: List all available tasks
+    cmds:
+      - task --list
+
+  # Essential Development Tasks
+  setup:
+    desc: Complete first-time project setup
+    cmds:
+      - task: check-deps
+      - task: install
+      - task: setup-env
+      - echo ""
+      - echo "Setup complete!"
+      - echo ""
+      - echo "Next step - task dev"
+      - echo ""
+
+  dev:
+    desc: Start development (local database + dev server)
+    deps: [install, db:start]
+    cmds:
+      - echo "Starting development server..."
+      - echo "Supabase Studio - http://localhost:54323"
+      - echo "API - http://localhost:54321"
+      - npm run dev
+
+  test:
+    desc: Run all quality checks (lint + typecheck)
+    deps: [install]
+    cmds:
+      - task: lint
+      - task: typecheck
+      - echo "All checks passed!"
+
+  build:
+    desc: Build for production
+    deps: [install]
+    cmds:
+      - npm run build
+
+  # Database Management
+  db:start:
+    desc: Start local Supabase database
+    cmds:
+      - |
+        if ! command -v supabase &> /dev/null; then
+          echo "Supabase CLI not found!"
+          echo "Install: https://supabase.com/docs/guides/cli/getting-started#installing-the-supabase-cli"
+          exit 1
+        fi
+      - echo "Starting Supabase..."
+      - supabase start
+      - echo "Database running!"
+      - echo "Studio - http://localhost:54323"
+      - echo "API - http://localhost:54321"
+
+  db:stop:
+    desc: Stop local database
+    cmds:
+      - supabase stop
+
+  db:reset:
+    desc: Reset database (deletes all data)
+    cmds:
+      - echo "This will delete all local data!"
+      - supabase db reset
+
+  db:status:
+    desc: Check database status
+    cmds:
+      - supabase status
+
+  # Code Quality
+  lint:
+    desc: Run ESLint
+    deps: [install]
+    cmds:
+      - npm run lint
+
+  lint:fix:
+    desc: Auto-fix linting issues
+    deps: [install]
+    cmds:
+      - npm run lint -- --fix
+
+  typecheck:
+    desc: Run TypeScript checking
+    deps: [install]
+    cmds:
+      - npm run typecheck
+
+  # Utilities
+  install:
+    desc: Install dependencies
+    cmds:
+      - npm install
+    sources:
+      - package.json
+      - package-lock.json
+    generates:
+      - node_modules/**/*
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -rf dist || true
+      - rm -rf node_modules || true
+      - rm -rf .vite || true
+      - echo "Cleaned"
+
+  preview:
+    desc: Preview production build
+    deps: [build]
+    cmds:
+      - npm run preview
+
+  # Internal Tasks
+  check-deps:
+    desc: Check required tools
+    cmds:
+      - |
+        echo "Checking dependencies..."
+        
+        # Check Node.js
+        if ! command -v node &> /dev/null; then
+          echo "Node.js not found! Please install Node.js >= 18.0.0"
+          exit 1
+        fi
+        echo "Node.js $(node --version)"
+        
+        # Check npm
+        if ! command -v npm &> /dev/null; then
+          echo "npm not found!"
+          exit 1
+        fi
+        echo "npm $(npm --version)"
+        
+        # Check Docker
+        if ! command -v docker &> /dev/null; then
+          echo "Docker not found (required for database)"
+          echo "Install: https://docs.docker.com/get-docker/"
+        else
+          echo "Docker $(docker --version | cut -d' ' -f3)"
+        fi
+        
+        # Check Supabase CLI
+        if ! command -v supabase &> /dev/null; then
+          echo "Supabase CLI not found (required for database)"
+          echo "Install: https://supabase.com/docs/guides/cli/getting-started#installing-the-supabase-cli"
+        else
+          echo "Supabase CLI $(supabase --version)"
+        fi
+
+  setup-env:
+    desc: Create environment files
+    cmds:
+      - |
+        if [ ! -f .env.local ]; then
+          echo "Creating .env.local..."
+          cat > .env.local <<EOF
+        # Local Development (Supabase Local)
+        VITE_SUPABASE_URL=http://localhost:54321
+        VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+        EOF
+          echo "Created .env.local"
+        else
+          echo ".env.local exists"
+        fi

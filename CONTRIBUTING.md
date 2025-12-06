@@ -1,0 +1,313 @@
+# Contributing to Wool Witch
+
+Thank you for your interest in contributing to Wool Witch! This guide will help you get started with development and contribution.
+
+## 🌟 Code of Conduct
+
+By participating in this project, you agree to maintain a respectful and inclusive environment for all contributors.
+
+## 🚀 Quick Start for Contributors
+
+### Prerequisites
+
+Before you begin, ensure you have:
+
+- Node.js (>= 18.0.0)
+- npm
+- [Docker Desktop](https://docs.docker.com/get-docker/) (for local database)
+- Git
+
+**Optional but recommended:**
+
+- [Task](https://taskfile.dev/) (task runner)
+
+### Setting Up Your Development Environment
+
+1. **Fork the repository** on GitHub
+
+2. **Clone your fork:**
+
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/wool-witch.git
+   cd wool-witch
+   ```
+
+3. **Add upstream remote:**
+
+   ```bash
+   git remote add upstream https://github.com/dataGriff/wool-witch.git
+   ```
+
+4. **Complete setup (one command does everything):**
+
+   ```bash
+   task setup
+   ```
+
+   This installs dependencies, sets up environment files, and checks prerequisites.
+
+5. **Start development:**
+
+   ```bash
+   task dev
+   ```
+
+   This starts the local Supabase database and development server.
+
+**First run takes 2-5 minutes** (downloads Docker images). Subsequent runs take ~30 seconds.
+
+### Your Development Environment
+
+Once running, you'll have access to:
+
+- 🌐 **Web App**: <http://localhost:5173>
+- 📊 **Database Admin (Supabase Studio)**: <http://localhost:54323>
+- 🔌 **API**: <http://localhost:54321>
+- 📧 **Email Testing (Inbucket)**: <http://localhost:54324>
+
+## 🔄 Development Process
+
+### Creating a New Feature
+
+1. **Create a feature branch:**
+
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+**Branch naming conventions:**
+
+- `feature/` - New features
+- `fix/` - Bug fixes
+- `docs/` - Documentation updates
+- `refactor/` - Code refactoring
+
+### Code Quality
+
+**Run these commands frequently during development:**
+
+```bash
+# Run linting and type checking
+task test
+
+# Auto-fix linting issues
+task lint:fix
+
+# Build to check for build errors
+task build
+```
+
+**Code quality tools:**
+
+- **ESLint** - Code quality and style
+- **TypeScript** - Type safety
+- **Prettier** - Code formatting (auto-configured)
+
+### Database Development
+
+**Create a new migration:**
+
+```bash
+task db:migration:new -- add_new_feature
+```
+
+**Reset database (fresh start):**
+
+```bash
+task db:reset
+```
+
+**Check database status:**
+
+```bash
+task db:status
+```
+
+### Testing Your Changes
+
+1. **Test the application** thoroughly in the browser
+2. **Run quality checks:**
+
+   ```bash
+   task test  # linting + type checking
+   ```
+
+3. **Test the build:**
+
+   ```bash
+   task build  # production build
+   ```
+
+## 📝 Submitting Your Contribution
+
+### Before Submitting
+
+1. **Update your branch** with the latest changes:
+
+   ```bash
+   git fetch upstream
+   git rebase upstream/main
+   ```
+
+2. **Ensure all quality checks pass:**
+
+   ```bash
+   task test
+   task build
+   ```
+
+3. **Push to your fork:**
+
+   ```bash
+   git push origin your-branch-name
+   ```
+
+4. **Create a Pull Request** on GitHub with:
+   - Clear title describing the change
+   - Description of what was added/changed/fixed
+   - Screenshots for UI changes
+   - Reference to any related issues
+
+5. **Respond to review feedback** promptly
+
+### Pull Request Checklist
+
+- [ ] Code follows the project's style guidelines
+- [ ] All tests pass (`task test`)
+- [ ] Build succeeds (`task build`)
+- [ ] No new linting errors
+- [ ] Added/updated documentation if needed
+- [ ] Tested the changes locally
+- [ ] Clear commit messages
+- [ ] PR description explains the changes
+
+## 🏗️ Project Structure
+
+```text
+wool-witch/
+├── src/
+│   ├── components/     # Reusable UI components
+│   ├── pages/          # Application pages
+│   ├── contexts/       # React contexts
+│   ├── lib/           # Utilities and configurations
+│   └── types/         # TypeScript type definitions
+├── supabase/
+│   └── migrations/    # Database migrations
+├── public/           # Static assets
+└── docs/            # Documentation
+```
+
+## 🛠️ Available Commands
+
+All commands use [Task](https://taskfile.dev/). If you don't have Task installed, you can run the underlying npm scripts directly.
+
+### Essential Commands
+
+```bash
+task setup      # First-time setup
+task dev        # Start development
+task test       # Run quality checks
+task build      # Build for production
+```
+
+### Database Commands
+
+```bash
+task db:start   # Start database
+task db:stop    # Stop database
+task db:reset   # Reset database
+task db:status  # Check status
+```
+
+### Quality Commands
+
+```bash
+task lint       # Run linter
+task lint:fix   # Auto-fix linting issues
+task typecheck  # Type checking
+```
+
+### Other Commands
+
+```bash
+task clean      # Clean build artifacts
+task preview    # Preview production build
+task --list     # See all available commands
+```
+
+## 🚨 Troubleshooting
+
+### Common Issues
+
+**Docker not running:**
+
+```bash
+# Make sure Docker Desktop is started
+docker ps  # Should list containers
+```
+
+**Port already in use:**
+
+```bash
+# Stop and restart
+task db:stop
+task dev
+```
+
+**Database won't start:**
+
+```bash
+# Complete reset
+task db:stop
+task clean:db
+task dev
+```
+
+**Node modules issues:**
+
+```bash
+# Clean and reinstall
+task clean
+task setup
+```
+
+### Getting Help
+
+- 📖 Check existing [Issues](https://github.com/dataGriff/wool-witch/issues)
+- 💬 Create a new issue for bugs or questions
+- 📧 Contact maintainers if needed
+
+## 📋 Issue Templates
+
+### Bug Reports
+
+Please include:
+
+- Description of the issue
+- Steps to reproduce
+- Expected behavior
+- Actual behavior
+- Screenshots (if applicable)
+- Environment details (OS, browser, etc.)
+
+### Feature Requests
+
+Please include:
+
+- Check if the feature has already been suggested
+- Clear description of the feature
+- Use case and benefits
+- Possible implementation approach
+
+## 🏷️ Coding Standards
+
+- **TypeScript**: Strict mode enabled
+- **React**: Function components with hooks
+- **Styling**: Tailwind CSS classes
+- **Imports**: Absolute imports from `src/`
+- **Naming**: camelCase for variables, PascalCase for components
+- **Files**: kebab-case for file names
+
+## 🙏 Thank You
+
+Every contribution helps make Wool Witch better for the crafting community. Thank you for taking the time to contribute!
