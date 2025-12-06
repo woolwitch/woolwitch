@@ -27,7 +27,10 @@ tasks:
       - echo ""
       - echo "Setup complete!"
       - echo ""
-      - echo "Next step: task dev"
+      - echo "Next steps:"
+      - echo "  • task dev                (start development)"
+      - echo "  • task setup-products     (demo product upload)"
+      - echo ""
       - echo "See CONTRIBUTING.md for development guide"
       - echo ""
 
@@ -37,9 +40,9 @@ tasks:
     cmds:
       - echo "Starting development server..."
       - echo ""
-      - echo "Supabase Studio: http://localhost:54323"
-      - echo "API: http://localhost:54321"
-      - echo "App will start at: http://localhost:5173"
+      - echo "Supabase Studio - http://localhost:54323"
+      - echo "API - http://localhost:54321"
+      - echo "App will start at - http://localhost:5173"
       - echo ""
       - npm run dev
 
@@ -94,6 +97,19 @@ tasks:
     cmds:
       - echo "Applying database migrations..."
       - supabase db push
+
+  # Product Management
+  upload-products:
+    desc: Upload product images to Supabase and sync database
+    deps: [install]
+    cmds:
+      - npm run upload-products
+
+  setup-products:
+    desc: Interactive demo of product upload system
+    deps: [install]
+    cmds:
+      - ./bin/demo-upload.sh
 
   # Code Quality
   lint:

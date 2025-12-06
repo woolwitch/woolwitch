@@ -65,6 +65,7 @@ That's it! The app runs at <http://localhost:5173> with a full local database.
 
 - **[Contributing Guide](CONTRIBUTING.md)** - Complete development setup
 - **[Authentication Setup](docs/AUTHENTICATION_SETUP.md)** - Testing auth features
+- **[Product Image Management](docs/PRODUCT_IMAGE_MANAGEMENT.md)** - Managing product images and Supabase storage
 - **[Database Schema](docs/)** - Database structure and migrations
 - **Deployment Guide** - Production deployment _(Coming Soon)_
 
