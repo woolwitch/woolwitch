@@ -20,11 +20,70 @@ tasks:
     generates:
       - node_modules/**/*
 
+  # Local Development with Supabase
+  dev:local:
+    desc: Start development server with local Supabase (Docker required)
+    deps: [install, db:start]
+    cmds:
+      - echo "🚀 Starting development server..."
+      - echo "📊 Supabase Studio: http://localhost:54323"
+      - echo "🔌 API: http://localhost:54321"
+      - npm run dev
+
   dev:
-    desc: Start development server with hot reload
+    desc: Start development server with hot reload (requires .env with Supabase credentials)
     deps: [install]
     cmds:
       - npm run dev
+
+  # Database Management (Local Supabase with Docker)
+  db:start:
+    desc: Start local Supabase database with Docker
+    cmds:
+      - |
+        if ! command -v supabase &> /dev/null; then
+          echo "❌ Supabase CLI not found!"
+          echo "📦 Installing Supabase CLI..."
+          echo "   Run: npm install -g supabase"
+          echo "   Or visit: https://supabase.com/docs/guides/cli"
+          exit 1
+        fi
+      - echo "🐳 Starting Supabase local development environment..."
+      - supabase start
+      - echo "✅ Supabase is running!"
+      - echo "📊 Studio: http://localhost:54323"
+      - echo "🔌 API: http://localhost:54321"
+      - echo "📧 Inbucket: http://localhost:54324"
+
+  db:stop:
+    desc: Stop local Supabase database
+    cmds:
+      - echo "🛑 Stopping Supabase..."
+      - supabase stop
+      - echo "✅ Supabase stopped"
+
+  db:reset:
+    desc: Reset local database (destroys all data)
+    cmds:
+      - echo "⚠️  Resetting database (this will delete all local data)..."
+      - supabase db reset
+      - echo "✅ Database reset complete"
+
+  db:status:
+    desc: Check status of local Supabase
+    cmds:
+      - supabase status
+
+  db:migration:new:
+    desc: Create a new database migration
+    cmds:
+      - |
+        if [ -z "{{.CLI_ARGS}}" ]; then
+          echo "❌ Please provide a migration name"
+          echo "Usage: task db:migration:new -- migration_name"
+          exit 1
+        fi
+      - supabase migration new {{.CLI_ARGS}}
 
   build:
     desc: Build the project for production
@@ -78,33 +137,120 @@ tasks:
       - rm -rf .vite || true
       - echo "✅ Cleaned build artifacts"
 
+  clean:db:
+    desc: Remove local Supabase Docker volumes (complete cleanup)
+    cmds:
+      - supabase stop --no-backup || true
+      - docker volume ls -q | grep supabase | xargs docker volume rm || true
+      - echo "✅ Cleaned all Supabase data"
+
   setup:
     desc: Complete first-time project setup
     cmds:
-      - task: check-env
+      - task: check-deps
       - task: install
-      - echo "✅ Setup complete! Run 'task dev' to start developing."
+      - task: setup-env
+      - echo ""
+      - echo "✅ Setup complete!"
+      - echo ""
+      - echo "🚀 Quick Start Options:"
+      - echo ""
+      - echo "Option 1 - Local Development (Recommended):"
+      - echo "  task dev:local     # Starts local Supabase + dev server"
+      - echo ""
+      - echo "Option 2 - Cloud Supabase:"
+      - echo "  1. Copy .env.local to .env"
+      - echo "  2. Add your Supabase credentials to .env"
+      - echo "  3. task dev"
+      - echo ""
+
+  check-deps:
+    desc: Check if required tools are installed
+    cmds:
+      - |
+        echo "🔍 Checking dependencies..."
+        
+        # Check Node.js
+        if ! command -v node &> /dev/null; then
+          echo "❌ Node.js not found! Please install Node.js >= 18.0.0"
+          exit 1
+        fi
+        echo "✅ Node.js $(node --version)"
+        
+        # Check npm
+        if ! command -v npm &> /dev/null; then
+          echo "❌ npm not found!"
+          exit 1
+        fi
+        echo "✅ npm $(npm --version)"
+        
+        # Check Docker
+        if ! command -v docker &> /dev/null; then
+          echo "⚠️  Docker not found (required for local database)"
+          echo "   Install from: https://docs.docker.com/get-docker/"
+        else
+          echo "✅ Docker $(docker --version | cut -d' ' -f3)"
+        fi
+        
+        # Check Supabase CLI
+        if ! command -v supabase &> /dev/null; then
+          echo "⚠️  Supabase CLI not found (required for local database)"
+          echo "   Install: npm install -g supabase"
+        else
+          echo "✅ Supabase CLI $(supabase --version)"
+        fi
+
+  setup-env:
+    desc: Set up environment files
+    cmds:
+      - |
+        if [ ! -f .env.local ]; then
+          echo "📝 Creating .env.local for local development..."
+          cat > .env.local <<EOF
+        # Local Development Environment Variables (Supabase Local)
+        # These are used when running Supabase locally with Docker
+        
+        # Local Supabase API URL (provided by Supabase CLI)
+        VITE_SUPABASE_URL=http://localhost:54321
+        
+        # Local Supabase Anonymous Key (default for local development)
+        VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+        EOF
+          echo "✅ Created .env.local"
+        else
+          echo "✅ .env.local already exists"
+        fi
+        
+        if [ ! -f .env.example ]; then
+          echo "📝 Creating .env.example..."
+          cat > .env.example <<EOF
+        # Supabase Configuration (for cloud deployment)
+        # Get these values from your Supabase project settings
+        # https://app.supabase.com/project/_/settings/api
+        
+        VITE_SUPABASE_URL=your_supabase_url_here
+        VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+        EOF
+          echo "✅ Created .env.example"
+        else
+          echo "✅ .env.example already exists"
+        fi
 
   check-env:
     desc: Check if required environment variables are set
     cmds:
       - |
-        if [ ! -f .env ]; then
-          if [ ! -f .env.example ]; then
-            echo "⚠️  .env and .env.example not found. Creating .env.example..."
-            cat > .env.example <<EOF
-        # Supabase Configuration
-        # Get these values from your Supabase project settings
-        VITE_SUPABASE_URL=your_supabase_url_here
-        VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
-        EOF
-          fi
-          echo "⚠️  .env file not found."
-          echo "📝 Please copy .env.example to .env and fill in your Supabase credentials"
-          echo "   You can get these from: https://app.supabase.com/project/_/settings/api"
+        if [ ! -f .env ] && [ ! -f .env.local ]; then
+          echo "⚠️  No environment file found (.env or .env.local)"
+          echo ""
+          echo "For local development:"
+          echo "  .env.local is automatically created with 'task setup'"
+          echo ""
+          echo "For cloud Supabase:"
+          echo "  Copy .env.example to .env and fill in your credentials"
           exit 1
         else
-          echo "✅ .env file exists"
+          echo "✅ Environment file exists"
         fi
     silent: true
 

@@ -13,9 +13,10 @@ By participating in this project, you agree to maintain a respectful and inclusi
 Before you begin, ensure you have:
 - Node.js (>= 18.0.0)
 - npm or yarn
+- [Docker Desktop](https://docs.docker.com/get-docker/) (for local database)
+- [Supabase CLI](https://supabase.com/docs/guides/cli) (install with `npm install -g supabase`)
 - [Task](https://taskfile.dev/) (recommended)
 - Git
-- A Supabase account
 
 ### Setting Up Your Development Environment
 
@@ -34,15 +35,27 @@ git remote add upstream https://github.com/dataGrif/wool-witch.git
 
 4. **Set up the project:**
 ```bash
-task setup  # or npm install
+task setup  # Installs dependencies and creates .env.local
 ```
 
-5. **Create a `.env` file** with your Supabase credentials (see README.md)
-
-6. **Start the development server:**
+5. **Start local development (no cloud account needed):**
 ```bash
-task dev  # or npm run dev
+task dev:local  # Starts local Supabase + dev server
 ```
+
+This will:
+- Start Supabase locally with Docker (first time takes a few minutes)
+- Apply database migrations automatically
+- Start the Vite development server
+- Open the app at http://localhost:5173
+
+### Accessing Development Tools
+
+When running locally:
+- 🌐 **Web App**: http://localhost:5173
+- 📊 **Supabase Studio** (DB Admin): http://localhost:54323
+- 🔌 **API**: http://localhost:54321
+- 📧 **Email Testing**: http://localhost:54324
 
 ## 🔄 Development Workflow
 
@@ -74,8 +87,8 @@ npm run lint && npm run typecheck
 
 3. **Test your changes** locally:
 ```bash
-task dev    # Start dev server
-task build  # Ensure it builds successfully
+task dev:local  # Start dev server with local database
+task build      # Ensure it builds successfully
 ```
 
 ### Code Style
