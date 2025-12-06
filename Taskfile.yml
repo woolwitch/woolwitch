@@ -1,8 +1,8 @@
-version: '3'
+version: "3"
 
 vars:
   PROJECT_NAME: wool-witch
-  NODE_VERSION: '>=18.0.0'
+  NODE_VERSION: ">=18.0.0"
 
 tasks:
   default:
@@ -26,8 +26,8 @@ tasks:
     deps: [install, db:start]
     cmds:
       - echo "🚀 Starting development server..."
-      - echo "📊 Supabase Studio: http://localhost:54323"
-      - echo "🔌 API: http://localhost:54321"
+      - echo "📊 Supabase Studio - http://localhost:54323"
+      - echo "🔌 API - http://localhost:54321"
       - npm run dev
 
   dev:
@@ -51,9 +51,9 @@ tasks:
       - echo "🐳 Starting Supabase local development environment..."
       - supabase start
       - echo "✅ Supabase is running!"
-      - echo "📊 Studio: http://localhost:54323"
-      - echo "🔌 API: http://localhost:54321"
-      - echo "📧 Inbucket: http://localhost:54324"
+      - echo "📊 Studio - http://localhost:54323"
+      - echo "🔌 API - http://localhost:54321"
+      - echo "📧 Inbucket - http://localhost:54324"
 
   db:stop:
     desc: Stop local Supabase database
@@ -160,7 +160,7 @@ tasks:
       - echo "🚀 Quick Start Options:"
       - echo ""
       - echo "Option 1 - Local Development (Recommended):"
-      - echo "  task dev:local     # Starts local Supabase + dev server"
+      - echo "  task dev:local     (Starts local Supabase + dev server)"
       - echo ""
       - echo "Option 2 - Cloud Supabase:"
       - echo "  1. Copy .env.local to .env"
