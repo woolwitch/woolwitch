@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Heart, ShoppingBag, User, LogOut, UserCog } from 'lucide-react';
+import { ShoppingBag, User, LogOut, UserCog } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { AuthModal } from './AuthModal';
+import woolwitchLogo from '../assets/woolwitch.jpg';
 
 interface HeaderProps {
   currentPage: 'shop' | 'cart' | 'checkout' | 'admin';
@@ -31,7 +32,11 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
             onClick={() => onNavigate('shop')}
             className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
           >
-            <Heart className="w-8 h-8 text-rose-500 fill-rose-500" />
+            <img 
+              src={woolwitchLogo} 
+              alt="Woolwitch Logo" 
+              className="w-20 h-20 rounded-lg object-cover shadow-sm"
+            />
             <div className="text-left">
               <h1 className="text-3xl font-serif font-bold text-gray-900">
                 Woolwitch
