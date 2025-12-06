@@ -1,182 +1,84 @@
-# Supabase CLI (v1)
+# Wool Witch 🧶
 
-[![Coverage Status](https://coveralls.io/repos/github/supabase/cli/badge.svg?branch=main)](https://coveralls.io/github/supabase/cli?branch=main)
+A modern e-commerce web application for handmade crochet and craft goods, built with React, TypeScript, and Supabase.
 
-[Supabase](https://supabase.io) is an open source Firebase alternative. We're building the features of Firebase using enterprise-grade open source tools.
+## ✨ Features
 
-This repository contains all the functionality for Supabase CLI.
+- 🛍️ **Product Catalog** - Browse beautiful handmade crochet items
+- 🛒 **Shopping Cart** - Add items and manage your cart
+- 💳 **Checkout Process** - Secure payment processing
+- 📱 **Responsive Design** - Works perfectly on all devices
+- ⚡ **Real-time Updates** - Powered by Supabase
 
-- [x] Running Supabase locally
-- [x] Managing database migrations
-- [x] Creating and deploying Supabase Functions
-- [x] Generating types directly from your database schema
-- [x] Making authenticated HTTP requests to [Management API](https://supabase.com/docs/reference/api/introduction)
+## 🚀 Quick Start
 
-## Getting started
+### For Users
 
-### Install the CLI
+Visit the live application: [Wool Witch Shop](https://your-domain.com) _(Coming Soon)_
 
-Available via [NPM](https://www.npmjs.com) as dev dependency. To install:
+### For Developers
 
-```bash
-npm i supabase --save-dev
-```
-
-To install the beta release channel:
+Get up and running in minutes:
 
 ```bash
-npm i supabase@beta --save-dev
+# Clone the repository
+git clone https://github.com/dataGrif/wool-witch.git
+cd wool-witch
+
+# Complete setup (installs dependencies, sets up local database)
+task setup
+
+# Start development (local database + dev server)
+task dev
 ```
 
-When installing with yarn 4, you need to disable experimental fetch with the following nodejs config.
+That's it! The app will be running at <http://localhost:5173>
 
-```
-NODE_OPTIONS=--no-experimental-fetch yarn add supabase
-```
+**What you get:**
 
-> **Note**
-For Bun versions below v1.0.17, you must add `supabase` as a [trusted dependency](https://bun.sh/guides/install/trusted) before running `bun add -D supabase`.
+- ✅ Local Supabase database running in Docker
+- ✅ Hot-reload development server
+- ✅ Database admin interface at <http://localhost:54323>
+- ✅ No cloud account or setup required
 
-<details>
-  <summary><b>macOS</b></summary>
+## 🛠️ Tech Stack
 
-  Available via [Homebrew](https://brew.sh). To install:
+- **Frontend**: React 18, TypeScript, Tailwind CSS
+- **Backend**: Supabase (PostgreSQL, Auth, Real-time)
+- **Build Tool**: Vite
+- **Package Manager**: npm
+- **Task Runner**: [Task](https://taskfile.dev/)
+- **Local Development**: Docker + Supabase CLI
 
-  ```sh
-  brew install supabase/tap/supabase
-  ```
+## 📖 Documentation
 
-  To install the beta release channel:
-  
-  ```sh
-  brew install supabase/tap/supabase-beta
-  brew link --overwrite supabase-beta
-  ```
-  
-  To upgrade:
+- **[Contributing Guide](CONTRIBUTING.md)** - How to contribute to the project
+- **[API Documentation](docs/api.md)** - Backend API reference _(Coming Soon)_
+- **[Deployment Guide](docs/deployment.md)** - How to deploy to production _(Coming Soon)_
 
-  ```sh
-  brew upgrade supabase
-  ```
-</details>
+## 🤝 Contributing
 
-<details>
-  <summary><b>Windows</b></summary>
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
-  Available via [Scoop](https://scoop.sh). To install:
+**Quick contribution steps:**
 
-  ```powershell
-  scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
-  scoop install supabase
-  ```
+1. Fork the repository
+2. Create a feature branch
+3. Run `task dev` to start development
+4. Make your changes
+5. Run `task test` to ensure quality
+6. Submit a pull request
 
-  To upgrade:
+## 📄 License
 
-  ```powershell
-  scoop update supabase
-  ```
-</details>
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-<details>
-  <summary><b>Linux</b></summary>
+## 🙏 Acknowledgments
 
-  Available via [Homebrew](https://brew.sh) and Linux packages.
+- Built with [Supabase](https://supabase.com/) - The open source Firebase alternative
+- UI components inspired by modern e-commerce best practices
+- Thanks to all contributors who help improve this project
 
-  #### via Homebrew
+---
 
-  To install:
-
-  ```sh
-  brew install supabase/tap/supabase
-  ```
-
-  To upgrade:
-
-  ```sh
-  brew upgrade supabase
-  ```
-
-  #### via Linux packages
-
-  Linux packages are provided in [Releases](https://github.com/supabase/cli/releases). To install, download the `.apk`/`.deb`/`.rpm`/`.pkg.tar.zst` file depending on your package manager and run the respective commands.
-
-  ```sh
-  sudo apk add --allow-untrusted <...>.apk
-  ```
-
-  ```sh
-  sudo dpkg -i <...>.deb
-  ```
-
-  ```sh
-  sudo rpm -i <...>.rpm
-  ```
-
-  ```sh
-  sudo pacman -U <...>.pkg.tar.zst
-  ```
-</details>
-
-<details>
-  <summary><b>Other Platforms</b></summary>
-
-  You can also install the CLI via [go modules](https://go.dev/ref/mod#go-install) without the help of package managers.
-
-  ```sh
-  go install github.com/supabase/cli@latest
-  ```
-
-  Add a symlink to the binary in `$PATH` for easier access:
-
-  ```sh
-  ln -s "$(go env GOPATH)/cli" /usr/bin/supabase
-  ```
-
-  This works on other non-standard Linux distros.
-</details>
-
-<details>
-  <summary><b>Community Maintained Packages</b></summary>
-
-  Available via [pkgx](https://pkgx.sh/). Package script [here](https://github.com/pkgxdev/pantry/blob/main/projects/supabase.com/cli/package.yml).
-  To install in your working directory:
-
-  ```bash
-  pkgx install supabase
-  ```
-
-  Available via [Nixpkgs](https://nixos.org/). Package script [here](https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/tools/supabase-cli/default.nix).
-</details>
-
-### Run the CLI
-
-```bash
-supabase bootstrap
-```
-
-Or using npx:
-
-```bash
-npx supabase bootstrap
-```
-
-The bootstrap command will guide you through the process of setting up a Supabase project using one of the [starter](https://github.com/supabase-community/supabase-samples/blob/main/samples.json) templates.
-
-## Docs
-
-Command & config reference can be found [here](https://supabase.com/docs/reference/cli/about).
-
-## Breaking changes
-
-We follow semantic versioning for changes that directly impact CLI commands, flags, and configurations.
-
-However, due to dependencies on other service images, we cannot guarantee that schema migrations, seed.sql, and generated types will always work for the same CLI major version. If you need such guarantees, we encourage you to pin a specific version of CLI in package.json.
-
-## Developing
-
-To run from source:
-
-```sh
-# Go >= 1.22
-go run . help
-```
+Made with ❤️ for the crafting community

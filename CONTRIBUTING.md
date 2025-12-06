@@ -1,247 +1,313 @@
 # Contributing to Wool Witch
 
-Thank you for your interest in contributing to Wool Witch! This document provides guidelines and instructions for contributing to the project.
+Thank you for your interest in contributing to Wool Witch! This guide will help you get started with development and contribution.
 
 ## 🌟 Code of Conduct
 
 By participating in this project, you agree to maintain a respectful and inclusive environment for all contributors.
 
-## 🚀 Getting Started
+## 🚀 Quick Start for Contributors
 
 ### Prerequisites
 
 Before you begin, ensure you have:
+
 - Node.js (>= 18.0.0)
-- npm or yarn
+- npm
 - [Docker Desktop](https://docs.docker.com/get-docker/) (for local database)
-- [Supabase CLI](https://supabase.com/docs/guides/cli) (install with `npm install -g supabase`)
-- [Task](https://taskfile.dev/) (recommended)
 - Git
+
+**Optional but recommended:**
+
+- [Task](https://taskfile.dev/) (task runner)
 
 ### Setting Up Your Development Environment
 
 1. **Fork the repository** on GitHub
 
 2. **Clone your fork:**
-```bash
-git clone https://github.com/YOUR_USERNAME/wool-witch.git
-cd wool-witch
-```
+
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/wool-witch.git
+   cd wool-witch
+   ```
 
 3. **Add upstream remote:**
-```bash
-git remote add upstream https://github.com/dataGrif/wool-witch.git
-```
 
-4. **Set up the project:**
-```bash
-task setup  # Installs dependencies and creates .env.local
-```
+   ```bash
+   git remote add upstream https://github.com/dataGriff/wool-witch.git
+   ```
 
-5. **Start local development (no cloud account needed):**
-```bash
-task dev:local  # Starts local Supabase + dev server
-```
+4. **Complete setup (one command does everything):**
 
-This will:
-- Start Supabase locally with Docker (first time takes a few minutes)
-- Apply database migrations automatically
-- Start the Vite development server
-- Open the app at http://localhost:5173
+   ```bash
+   task setup
+   ```
 
-### Accessing Development Tools
+   This installs dependencies, sets up environment files, and checks prerequisites.
 
-When running locally:
-- 🌐 **Web App**: http://localhost:5173
-- 📊 **Supabase Studio** (DB Admin): http://localhost:54323
-- 🔌 **API**: http://localhost:54321
-- 📧 **Email Testing**: http://localhost:54324
+5. **Start development:**
 
-## 🔄 Development Workflow
+   ```bash
+   task dev
+   ```
 
-### Creating a Branch
+   This starts the local Supabase database and development server.
 
-Always create a new branch for your work:
-```bash
-git checkout -b feature/your-feature-name
-# or
-git checkout -b fix/your-bug-fix
-```
+**First run takes 2-5 minutes** (downloads Docker images). Subsequent runs take ~30 seconds.
 
-Branch naming conventions:
+### Your Development Environment
+
+Once running, you'll have access to:
+
+- 🌐 **Web App**: <http://localhost:5173>
+- 📊 **Database Admin (Supabase Studio)**: <http://localhost:54323>
+- 🔌 **API**: <http://localhost:54321>
+- 📧 **Email Testing (Inbucket)**: <http://localhost:54324>
+
+## 🔄 Development Process
+
+### Creating a New Feature
+
+1. **Create a feature branch:**
+
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+**Branch naming conventions:**
+
 - `feature/` - New features
 - `fix/` - Bug fixes
-- `docs/` - Documentation changes
+- `docs/` - Documentation updates
 - `refactor/` - Code refactoring
-- `test/` - Adding or updating tests
 
-### Making Changes
+### Code Quality
 
-1. **Make your changes** in small, logical commits
-2. **Run quality checks** frequently:
+**Run these commands frequently during development:**
+
 ```bash
-task test  # Runs lint and typecheck
-# or
-npm run lint && npm run typecheck
-```
-
-3. **Test your changes** locally:
-```bash
-task dev:local  # Start dev server with local database
-task build      # Ensure it builds successfully
-```
-
-### Code Style
-
-We use ESLint and TypeScript for code quality:
-
-- **Run linter:**
-```bash
-task lint  # or npm run lint
-```
-
-- **Auto-fix issues:**
-```bash
-task lint:fix  # or npm run lint -- --fix
-```
-
-- **Type checking:**
-```bash
-task typecheck  # or npm run typecheck
-```
-
-### Commit Messages
-
-Follow these guidelines for commit messages:
-
-- Use present tense ("Add feature" not "Added feature")
-- Use imperative mood ("Move cursor to..." not "Moves cursor to...")
-- Limit the first line to 72 characters
-- Reference issues and pull requests liberally
-
-Examples:
-```
-Add shopping cart persistence feature
-
-Fix layout issue on mobile devices
-
-Update README with installation instructions
-
-Refactor product card component for better reusability
-```
-
-## 📝 Pull Request Process
-
-1. **Update your branch** with the latest upstream changes:
-```bash
-git fetch upstream
-git rebase upstream/main
-```
-
-2. **Ensure all checks pass:**
-```bash
+# Run linting and type checking
 task test
+
+# Auto-fix linting issues
+task lint:fix
+
+# Build to check for build errors
 task build
 ```
 
-3. **Push to your fork:**
+**Code quality tools:**
+
+- **ESLint** - Code quality and style
+- **TypeScript** - Type safety
+- **Prettier** - Code formatting (auto-configured)
+
+### Database Development
+
+**Create a new migration:**
+
 ```bash
-git push origin your-branch-name
+task db:migration:new -- add_new_feature
 ```
 
+**Reset database (fresh start):**
+
+```bash
+task db:reset
+```
+
+**Check database status:**
+
+```bash
+task db:status
+```
+
+### Testing Your Changes
+
+1. **Test the application** thoroughly in the browser
+2. **Run quality checks:**
+
+   ```bash
+   task test  # linting + type checking
+   ```
+
+3. **Test the build:**
+
+   ```bash
+   task build  # production build
+   ```
+
+## 📝 Submitting Your Contribution
+
+### Before Submitting
+
+1. **Update your branch** with the latest changes:
+
+   ```bash
+   git fetch upstream
+   git rebase upstream/main
+   ```
+
+2. **Ensure all quality checks pass:**
+
+   ```bash
+   task test
+   task build
+   ```
+
+3. **Push to your fork:**
+
+   ```bash
+   git push origin your-branch-name
+   ```
+
 4. **Create a Pull Request** on GitHub with:
-   - Clear title and description
-   - Reference any related issues
+   - Clear title describing the change
+   - Description of what was added/changed/fixed
    - Screenshots for UI changes
-   - List of changes made
+   - Reference to any related issues
 
 5. **Respond to review feedback** promptly
 
 ### Pull Request Checklist
 
-Before submitting, ensure:
 - [ ] Code follows the project's style guidelines
 - [ ] All tests pass (`task test`)
 - [ ] Build succeeds (`task build`)
-- [ ] Documentation is updated if needed
-- [ ] Commit messages are clear and descriptive
-- [ ] No unnecessary files are included
-- [ ] `.env` file is not committed
+- [ ] No new linting errors
+- [ ] Added/updated documentation if needed
+- [ ] Tested the changes locally
+- [ ] Clear commit messages
+- [ ] PR description explains the changes
 
-## 🧪 Testing
+## 🏗️ Project Structure
 
-Currently, the project uses:
-- ESLint for code quality
-- TypeScript for type checking
-
-Run all checks:
-```bash
-task test  # or npm run lint && npm run typecheck
-```
-
-## 📋 Project Structure
-
-```
+```text
 wool-witch/
 ├── src/
 │   ├── components/     # Reusable UI components
+│   ├── pages/          # Application pages
 │   ├── contexts/       # React contexts
-│   ├── lib/           # Utility functions and configurations
-│   ├── pages/         # Page components
-│   ├── types/         # TypeScript type definitions
-│   └── App.tsx        # Main app component
+│   ├── lib/           # Utilities and configurations
+│   └── types/         # TypeScript type definitions
 ├── supabase/
 │   └── migrations/    # Database migrations
-├── public/            # Static assets
-├── Taskfile.yml       # Task runner configuration
-└── package.json       # Project dependencies
+├── public/           # Static assets
+└── docs/            # Documentation
 ```
 
-## 🐛 Reporting Bugs
+## 🛠️ Available Commands
 
-When reporting bugs, please include:
+All commands use [Task](https://taskfile.dev/). If you don't have Task installed, you can run the underlying npm scripts directly.
+
+### Essential Commands
+
+```bash
+task setup      # First-time setup
+task dev        # Start development
+task test       # Run quality checks
+task build      # Build for production
+```
+
+### Database Commands
+
+```bash
+task db:start   # Start database
+task db:stop    # Stop database
+task db:reset   # Reset database
+task db:status  # Check status
+```
+
+### Quality Commands
+
+```bash
+task lint       # Run linter
+task lint:fix   # Auto-fix linting issues
+task typecheck  # Type checking
+```
+
+### Other Commands
+
+```bash
+task clean      # Clean build artifacts
+task preview    # Preview production build
+task --list     # See all available commands
+```
+
+## 🚨 Troubleshooting
+
+### Common Issues
+
+**Docker not running:**
+
+```bash
+# Make sure Docker Desktop is started
+docker ps  # Should list containers
+```
+
+**Port already in use:**
+
+```bash
+# Stop and restart
+task db:stop
+task dev
+```
+
+**Database won't start:**
+
+```bash
+# Complete reset
+task db:stop
+task clean:db
+task dev
+```
+
+**Node modules issues:**
+
+```bash
+# Clean and reinstall
+task clean
+task setup
+```
+
+### Getting Help
+
+- 📖 Check existing [Issues](https://github.com/dataGriff/wool-witch/issues)
+- 💬 Create a new issue for bugs or questions
+- 📧 Contact maintainers if needed
+
+## 📋 Issue Templates
+
+### Bug Reports
+
+Please include:
+
 - Description of the issue
 - Steps to reproduce
 - Expected behavior
 - Actual behavior
 - Screenshots (if applicable)
-- Environment details (OS, browser, Node version)
+- Environment details (OS, browser, etc.)
 
-## 💡 Suggesting Features
+### Feature Requests
 
-We welcome feature suggestions! Please:
+Please include:
+
 - Check if the feature has already been suggested
-- Provide a clear use case
-- Explain the expected benefit
-- Consider including mockups or examples
+- Clear description of the feature
+- Use case and benefits
+- Possible implementation approach
 
-## 📚 Documentation
+## 🏷️ Coding Standards
 
-Good documentation is crucial. When contributing:
-- Update README.md for user-facing changes
-- Update this CONTRIBUTING.md for process changes
-- Add comments for complex code logic
-- Update TypeScript types and interfaces
+- **TypeScript**: Strict mode enabled
+- **React**: Function components with hooks
+- **Styling**: Tailwind CSS classes
+- **Imports**: Absolute imports from `src/`
+- **Naming**: camelCase for variables, PascalCase for components
+- **Files**: kebab-case for file names
 
-## 🔒 Security
+## 🙏 Thank You
 
-If you discover a security vulnerability:
-- **DO NOT** open a public issue
-- Email the maintainers directly
-- Provide detailed information about the vulnerability
-
-## 📞 Getting Help
-
-If you need help:
-- Check existing documentation
-- Search existing issues
-- Open a new issue with the "question" label
-- Be specific about what you're trying to do
-
-## 🙏 Recognition
-
-Contributors will be recognized in:
-- The project's contributor list
-- Release notes for significant contributions
-
-Thank you for contributing to Wool Witch! 🧶✨
+Every contribution helps make Wool Witch better for the crafting community. Thank you for taking the time to contribute!
