@@ -21,6 +21,29 @@ Before you begin, ensure you have:
 
 - [Task](https://taskfile.dev/) (task runner)
 
+#### Installing Task
+
+If you don't have Task installed, you can install it using the official installation script:
+
+```bash
+# Install Task using the official script
+curl -sL https://taskfile.dev/install.sh | sh
+
+# Move to system PATH (may require sudo)
+sudo mv ./bin/task /usr/local/bin/task
+
+# Verify installation
+task --version
+```
+
+Alternative installation methods:
+
+- **macOS**: `brew install go-task`
+- **Ubuntu/Debian**: `sudo snap install task --classic`
+- **Other platforms**: See [Task installation guide](https://taskfile.dev/installation/)
+
+Without Task, you can use npm scripts instead (see package.json for available scripts).
+
 ### Setting Up Your Development Environment
 
 1. **Fork the repository** on GitHub

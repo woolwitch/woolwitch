@@ -62,15 +62,48 @@ tasks:
       - npm run build
 
   # Database Management
-  db:start:
-    desc: Start local Supabase database
+  install-supabase:
+    desc: Install Supabase CLI if not present
     cmds:
       - |
         if ! command -v supabase &> /dev/null; then
-          echo "Supabase CLI not found!"
-          echo "Install: https://supabase.com/docs/guides/cli/getting-started#installing-the-supabase-cli"
-          exit 1
+          echo "Supabase CLI not found, installing..."
+          
+          # Detect OS
+          OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+          ARCH=$(uname -m)
+          
+          # Map architecture names
+          case $ARCH in
+            x86_64) ARCH="amd64" ;;
+            aarch64|arm64) ARCH="arm64" ;;
+            armv7l) ARCH="arm" ;;
+          esac
+          
+          # Download and install
+          LATEST_VERSION=$(curl -s https://api.github.com/repos/supabase/cli/releases/latest | grep -o '"tag_name": "[^"]*' | cut -d'"' -f4)
+          DOWNLOAD_URL="https://github.com/supabase/cli/releases/latest/download/supabase_${OS}_${ARCH}.tar.gz"
+          
+          echo "Downloading Supabase CLI $LATEST_VERSION for $OS/$ARCH..."
+          
+          # Create temporary directory and extract there
+          TEMP_DIR=$(mktemp -d)
+          curl -sSL "$DOWNLOAD_URL" | tar -xz -C "$TEMP_DIR"
+          
+          # Move to system PATH
+          sudo mv "$TEMP_DIR/supabase" /usr/local/bin/supabase
+          rm -rf "$TEMP_DIR"
+          
+          # Verify installation
+          echo "Supabase CLI installed successfully: $(supabase --version)"
+        else
+          echo "Supabase CLI already installed: $(supabase --version)"
         fi
+
+  db:start:
+    desc: Start local Supabase database
+    deps: [install-supabase]
+    cmds:
       - echo "Starting Supabase..."
       - supabase start
       - echo "Database running!"
@@ -79,22 +112,26 @@ tasks:
 
   db:stop:
     desc: Stop local database
+    deps: [install-supabase]
     cmds:
       - supabase stop
 
   db:reset:
     desc: Reset database (deletes all data)
+    deps: [install-supabase]
     cmds:
       - echo "This will delete all local data!"
       - supabase db reset
 
   db:status:
     desc: Check database status
+    deps: [install-supabase]
     cmds:
       - supabase status
 
   db:migrate:
     desc: Apply pending database migrations
+    deps: [install-supabase]
     cmds:
       - echo "Applying database migrations..."
       - supabase db push
@@ -196,8 +233,7 @@ tasks:
 
         # Check Supabase CLI
         if ! command -v supabase &> /dev/null; then
-          echo "WARNING: Supabase CLI not found (required for database)"
-          echo "   Install: https://supabase.com/docs/guides/cli/getting-started"
+          echo "Supabase CLI not found (will be auto-installed when needed)"
         else
           echo "Supabase CLI $(supabase --version)"
         fi
