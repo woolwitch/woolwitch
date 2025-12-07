@@ -22,6 +22,8 @@ You should have configured these in your GitHub repository settings:
 
 **Secrets** (Repository Settings → Secrets and variables → Actions → Secrets):
 - `VITE_SUPABASE_ANON_KEY`: Your Supabase anonymous key
+- `SUPABASE_DB_URL`: Your Supabase database URL (format: `postgresql://postgres:[password]@db.[project-ref].supabase.co:5432/postgres`)
+- `SUPABASE_ACCESS_TOKEN`: Your Supabase access token (from Supabase Dashboard → Settings → Access Tokens)
 
 ### Vite Configuration
 
