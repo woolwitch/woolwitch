@@ -44,6 +44,7 @@ tasks:
       - echo "API - http://localhost:54321"
       - echo "App will start at - http://localhost:5173"
       - echo ""
+      - task: upload-products-if-needed
       - npm run dev
 
   test:
@@ -105,6 +106,14 @@ tasks:
     cmds:
       - npm run upload-products
 
+  upload-products-if-needed:
+    desc: Upload products only if database is empty
+    deps: [install]
+    cmds:
+      - |
+        echo "📦 Checking for existing products and uploading if needed..."
+        npm run upload-products || echo "⚠️  Product upload failed, continuing..."
+
   setup-products:
     desc: Interactive demo of product upload system
     deps: [install]
@@ -141,8 +150,6 @@ tasks:
     generates:
       - node_modules/**/*
 
-
-
   clean:
     desc: Clean build artifacts
     cmds:
@@ -164,21 +171,21 @@ tasks:
       - |
         echo "Checking dependencies..."
         echo ""
-        
+
         # Check Node.js
         if ! command -v node &> /dev/null; then
           echo "Node.js not found! Please install Node.js >= 18.0.0"
           exit 1
         fi
         echo "Node.js $(node --version)"
-        
+
         # Check npm
         if ! command -v npm &> /dev/null; then
           echo "npm not found!"
           exit 1
         fi
         echo "npm $(npm --version)"
-        
+
         # Check Docker
         if ! command -v docker &> /dev/null; then
           echo "WARNING: Docker not found (required for local database)"
@@ -186,7 +193,7 @@ tasks:
         else
           echo "Docker $(docker --version | cut -d' ' -f3 | tr -d ',')"
         fi
-        
+
         # Check Supabase CLI
         if ! command -v supabase &> /dev/null; then
           echo "WARNING: Supabase CLI not found (required for database)"
@@ -194,7 +201,7 @@ tasks:
         else
           echo "Supabase CLI $(supabase --version)"
         fi
-        
+
         echo ""
         echo "Dependency check complete"
 
@@ -208,6 +215,7 @@ tasks:
         # Local Development (Supabase Local)
         VITE_SUPABASE_URL=http://localhost:54321
         VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+        SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
         EOF
           echo "Created .env.local"
         else
