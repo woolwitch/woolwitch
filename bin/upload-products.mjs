@@ -53,6 +53,9 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
     autoRefreshToken: false,
     persistSession: false,
   },
+  db: {
+    schema: "woolwitch",
+  },
 });
 
 // Product data for items with local images

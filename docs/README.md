@@ -8,10 +8,15 @@ This directory contains technical documentation for the Wool Witch project.
 - **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - Technical overview of the authentication implementation
 - **[promote_user_to_admin.sql](promote_user_to_admin.sql)** - SQL scripts for user role management
 
-## Database
+## Security & Database Schema
 
+- **[WOOLWITCH_SCHEMA_SECURITY.md](WOOLWITCH_SCHEMA_SECURITY.md)** - Comprehensive guide to the woolwitch schema security implementation
 - **Database Schema** - See migration files in `supabase/migrations/`
 - **Row Level Security** - Policies documented in migration files
+
+## Product Management
+
+- **[PRODUCT_IMAGE_MANAGEMENT.md](PRODUCT_IMAGE_MANAGEMENT.md)** - Guide for managing product images and uploads
 
 ## Development
 
@@ -20,4 +25,3 @@ For development setup and contributing, see the main [CONTRIBUTING.md](../CONTRI
 ## Deployment
 
 Deployment documentation coming soon.
-
