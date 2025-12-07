@@ -45,7 +45,9 @@ jobs:
         
     - name: Run Supabase migrations
       run: |
-        supabase db push --db-url "${{ secrets.SUPABASE_DB_URL }}"
+        # Link to remote project and push migrations
+        supabase link --project-ref $(echo "${{ secrets.VITE_SUPABASE_URL }}" | sed 's/.*\/\/\([^.]*\).*/\1/')
+        supabase db push
       env:
         SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         
