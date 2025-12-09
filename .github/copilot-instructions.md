@@ -1,32 +1,40 @@
 # Copilot Instructions - Wool Witch
 
-This is a React + TypeScript e-commerce application for handmade crochet goods, built with Supabase backend and Vite tooling.
+React + TypeScript e-commerce application for handmade crochet goods, built with Supabase backend and Vite tooling.
 
 ## Architecture Overview
 
 **State Management**: React Context pattern with two main providers:
-- `AuthContext` - User authentication, admin role checking, and session management
-- `CartContext` - Shopping cart state with localStorage persistence
+- `AuthContext` - User authentication, admin role checking, session management. Includes mock Google auth for local dev
+- `CartContext` - Shopping cart state with localStorage persistence and delivery charge calculations
 
-**Navigation**: Single-page app using state-based routing in `App.tsx` (`shop | cart | checkout | admin`)
+**Navigation**: Single-page app using state-based routing in `App.tsx` (`shop | cart | checkout | admin | about | contact`)
 
-**Data Layer**: Supabase client (`src/lib/supabase.ts`) with TypeScript types in `src/types/database.ts`
+**Data Layer**: Supabase client with `woolwitch` schema. Database types in `src/types/database.ts`. All app data lives in `woolwitch` schema, not `public`.
 
-**Authentication Flow**: Email/password auth with role-based access control via `user_roles` table. Admin status checked on auth state change.
+**Authentication Flow**: Email/password + Google OAuth with role-based access control via `user_roles` table. Admin status checked on auth state change, NOT from JWT claims.
 
 ## Development Workflow
 
 **Primary Commands** (use [Task](https://taskfile.dev/) runner):
 ```bash
 task setup    # First-time setup: deps + env + database
-task dev      # Start Supabase + dev server
+task dev      # Start Supabase + dev server (full stack)
+task dev-only # Start only dev server (assumes DB running)
 task test     # Run lint + typecheck
-task db:reset # Reset local database
+task db:reset # Reset local database with fresh migrations
+```
+
+**Quick Start Without Database** (frontend only):
+```bash
+npm start     # Auto-creates .env.local, starts dev server
 ```
 
 **Database**: Local Supabase in Docker. Access Studio at `http://localhost:54323`, API at `http://localhost:54321`
 
-**Environment**: Auto-generated `.env.local` with local Supabase credentials (see `Taskfile.yml` setup-env task)
+**Environment**: Auto-generated `.env.local` with local Supabase credentials. See `Taskfile.yml` setup-env task for auto-creation logic.
+
+**Schema**: App uses `woolwitch` schema exclusively - import supabase client with `db: { schema: 'woolwitch' }`. All queries hit `woolwitch.products`, `woolwitch.user_roles`, etc.
 
 ## Key Patterns
 
@@ -39,21 +47,28 @@ task db:reset # Reset local database
 - Row Level Security (RLS) policies protect admin operations
 - Products table has public read, admin-only write policies
 - User roles checked via `user_roles` table join on auth state change
+- All queries use `woolwitch` schema: `supabase.from('products')` → `woolwitch.products`
 
 **Product Management**:
 - Images stored in Supabase Storage (`product-images` bucket)
 - Upload script: `bin/upload-products.mjs` (requires SUPABASE_SERVICE_ROLE_KEY)
-- Demo products via `task setup-products`
+- Demo products via `task setup-products` or `task upload-products-if-needed`
+
+**State-based Routing**: `App.tsx` manages `currentPage` state instead of React Router. Navigation via `setCurrentPage('shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact')`.
 
 ## Critical Implementation Details
 
 **Admin Access**: Check `AuthContext.isAdmin` before showing admin features. Admin status comes from database query, not JWT claims.
+
+**Mock Authentication**: Local development includes mock Google OAuth - creates fake Gmail accounts and signs them in automatically when `isLocal` detected.
 
 **Image Handling**: Product images reference Supabase Storage URLs. Use `upload-products.mjs` script to sync local images in `src/assets/products/` to storage.
 
 **Local Development**: Database runs in Docker via Supabase CLI. Migrations in `supabase/migrations/` auto-apply. Use `task db:status` to check connection.
 
 **TypeScript**: Strict database types generated from Supabase schema. Import from `src/types/database.ts`.
+
+**Testing**: Use `bin/test-schema.mjs` to verify schema configuration and `npm run test` for lint + typecheck.
 
 ## Common Tasks
 
