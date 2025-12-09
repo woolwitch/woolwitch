@@ -108,6 +108,8 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
       delivery_charge: item.product.delivery_charge || 0
     }));
 
+    console.log('Creating order items:', JSON.stringify(orderItems, null, 2));
+
     const { error: itemsError } = await supabase
       .from('order_items')
       .insert(orderItems as any);
