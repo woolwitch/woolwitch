@@ -4,9 +4,11 @@ import { Shop } from './pages/Shop';
 import { Cart } from './pages/Cart';
 import { Checkout } from './pages/Checkout';
 import { Admin } from './pages/Admin';
+import { About } from './pages/About';
+import { Contact } from './pages/Contact';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'shop' | 'cart' | 'checkout' | 'admin'>('shop');
+  const [currentPage, setCurrentPage] = useState<'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact'>('shop');
 
   const renderPage = () => {
     switch (currentPage) {
@@ -18,6 +20,10 @@ function App() {
         return <Checkout onNavigate={setCurrentPage} />;
       case 'admin':
         return <Admin />;
+      case 'about':
+        return <About />;
+      case 'contact':
+        return <Contact />;
       default:
         return <Shop />;
     }

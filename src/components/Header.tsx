@@ -6,8 +6,8 @@ import { AuthModal } from './AuthModal';
 import woolwitchLogo from '../assets/woolwitch.jpg';
 
 interface HeaderProps {
-  currentPage: 'shop' | 'cart' | 'checkout' | 'admin';
-  onNavigate: (page: 'shop' | 'cart' | 'checkout' | 'admin') => void;
+  currentPage: 'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact';
+  onNavigate: (page: 'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact') => void;
 }
 
 export function Header({ currentPage, onNavigate }: HeaderProps) {
@@ -26,7 +26,7 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
     }
   };
 
-  const handleNavigation = (page: 'shop' | 'cart' | 'checkout' | 'admin') => {
+  const handleNavigation = (page: 'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact') => {
     onNavigate(page);
     setMobileMenuOpen(false);
   };
@@ -75,12 +75,26 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
                 Admin
               </button>
             )}
-            <a href="#" className="text-gray-700 hover:text-rose-600 transition-colors font-medium">
+            <button
+              onClick={() => handleNavigation('about')}
+              className={`font-medium transition-colors ${
+                currentPage === 'about'
+                  ? 'text-rose-600'
+                  : 'text-gray-700 hover:text-rose-600'
+              }`}
+            >
               About
-            </a>
-            <a href="#" className="text-gray-700 hover:text-rose-600 transition-colors font-medium">
+            </button>
+            <button
+              onClick={() => handleNavigation('contact')}
+              className={`font-medium transition-colors ${
+                currentPage === 'contact'
+                  ? 'text-rose-600'
+                  : 'text-gray-700 hover:text-rose-600'
+              }`}
+            >
               Contact
-            </a>
+            </button>
           </nav>
 
           <div className="flex items-center space-x-1 sm:space-x-3">
@@ -163,26 +177,26 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
                 Admin
               </button>
             )}
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                setMobileMenuOpen(false);
-              }}
-              className="block px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors"
+            <button
+              onClick={() => handleNavigation('about')}
+              className={`block w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
+                currentPage === 'about'
+                  ? 'bg-rose-50 text-rose-600'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
             >
               About
-            </a>
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                setMobileMenuOpen(false);
-              }}
-              className="block px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors"
+            </button>
+            <button
+              onClick={() => handleNavigation('contact')}
+              className={`block w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
+                currentPage === 'contact'
+                  ? 'bg-rose-50 text-rose-600'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
             >
               Contact
-            </a>
+            </button>
           </nav>
         </div>
       )}
