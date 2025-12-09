@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { Product } from '../types/database';
 
 export interface CartItem {
@@ -16,12 +16,40 @@ interface CartContextType {
   deliveryTotal: number;
   total: number;
   itemCount: number;
+  isLoading: boolean;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load cart from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedCart = localStorage.getItem('woolwitch-cart');
+      if (savedCart) {
+        const parsedCart = JSON.parse(savedCart);
+        setItems(Array.isArray(parsedCart) ? parsedCart : []);
+      }
+    } catch (error) {
+      console.error('Error loading cart from localStorage:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Save cart to localStorage whenever items change
+  useEffect(() => {
+    if (!isLoading) {
+      try {
+        localStorage.setItem('woolwitch-cart', JSON.stringify(items));
+      } catch (error) {
+        console.error('Error saving cart to localStorage:', error);
+      }
+    }
+  }, [items, isLoading]);
 
   const addItem = (product: Product, quantity: number) => {
     setItems((prevItems) => {
@@ -55,6 +83,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = () => {
     setItems([]);
+    // Also clear from localStorage immediately
+    try {
+      localStorage.removeItem('woolwitch-cart');
+    } catch (error) {
+      console.error('Error clearing cart from localStorage:', error);
+    }
   };
 
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
@@ -63,7 +97,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, subtotal, deliveryTotal, total, itemCount }}>
+    <CartContext.Provider value={{ 
+      items, 
+      addItem, 
+      removeItem, 
+      updateQuantity, 
+      clearCart, 
+      subtotal, 
+      deliveryTotal, 
+      total, 
+      itemCount, 
+      isLoading 
+    }}>
       {children}
     </CartContext.Provider>
   );

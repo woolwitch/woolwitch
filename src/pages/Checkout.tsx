@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
+import PaymentMethodSelector, { PaymentMethod } from '../components/PaymentMethodSelector';
+import PayPalButton, { PayPalPaymentData } from '../components/PayPalButton';
+import { createOrder, validateOrderData } from '../lib/orderService';
+import type { OrderAddress, CreateOrderData } from '../types/database';
 
 interface CheckoutProps {
   onNavigate: (page: 'shop' | 'cart' | 'checkout') => void;
@@ -15,10 +19,16 @@ interface OrderDetails {
   cardNumber: string;
 }
 
+interface PaymentState {
+  method: PaymentMethod;
+  isProcessing: boolean;
+  error: string | null;
+}
+
 export function Checkout({ onNavigate }: CheckoutProps) {
   const { items, subtotal, deliveryTotal, total, clearCart } = useCart();
-  const [isProcessing, setIsProcessing] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [completedOrderData, setCompletedOrderData] = useState<{ total: number; email: string; paymentMethod: PaymentMethod } | null>(null);
   const [formData, setFormData] = useState<OrderDetails>({
     email: '',
     fullName: '',
@@ -26,6 +36,11 @@ export function Checkout({ onNavigate }: CheckoutProps) {
     city: '',
     postcode: '',
     cardNumber: '',
+  });
+  const [paymentState, setPaymentState] = useState<PaymentState>({
+    method: 'card',
+    isProcessing: false,
+    error: null
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,15 +51,104 @@ export function Checkout({ onNavigate }: CheckoutProps) {
     }));
   };
 
+  // Helper to create address object
+  const getOrderAddress = (): OrderAddress => ({
+    address: formData.address,
+    city: formData.city,
+    postcode: formData.postcode
+  });
+
+  // Card payment form submission handler  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsProcessing(true);
+    
+    if (paymentState.method !== 'card') return; // Only handle card payments here
+    
+    try {
+      setPaymentState(prev => ({ ...prev, isProcessing: true, error: null }));
 
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Mock card processing delay
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
-    setIsCompleted(true);
-    setIsProcessing(false);
-    clearCart();
+      const orderData: CreateOrderData = {
+        email: formData.email,
+        fullName: formData.fullName,
+        address: getOrderAddress(),
+        cartItems: items.map(item => ({ product: item.product, quantity: item.quantity })),
+        paymentMethod: 'card',
+        paymentId: `card_${Date.now()}` // Mock card transaction ID
+      };
+
+      // Validate order data
+      const validationErrors = validateOrderData(orderData);
+      if (validationErrors.length > 0) {
+        throw new Error(validationErrors.join(', '));
+      }
+
+      // Create order in database
+      const order = await createOrder(orderData);
+      
+      // Clear cart and show success
+      clearCart();
+      setCompletedOrderData({ 
+        total, 
+        email: formData.email, 
+        paymentMethod: 'card' 
+      });
+      setIsCompleted(true);
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Payment processing failed';
+      setPaymentState(prev => ({ ...prev, error: errorMessage }));
+    } finally {
+      setPaymentState(prev => ({ ...prev, isProcessing: false }));
+    }
+  };
+
+  // PayPal payment success handler
+  const handlePayPalSuccess = async (paymentData: PayPalPaymentData) => {
+    try {
+      setPaymentState(prev => ({ ...prev, isProcessing: true, error: null }));
+      
+      const orderData: CreateOrderData = {
+        email: formData.email,
+        fullName: formData.fullName,
+        address: getOrderAddress(),
+        cartItems: items.map(item => ({ product: item.product, quantity: item.quantity })),
+        paymentMethod: 'paypal',
+        paymentId: paymentData.paymentID,
+        paypalDetails: paymentData.details
+      };
+
+      // Validate order data
+      const validationErrors = validateOrderData(orderData);
+      if (validationErrors.length > 0) {
+        throw new Error(validationErrors.join(', '));
+      }
+
+      // Create order in database
+      const order = await createOrder(orderData);
+      
+      // Clear cart and show success
+      clearCart();
+      setCompletedOrderData({ 
+        total, 
+        email: formData.email, 
+        paymentMethod: 'paypal' 
+      });
+      setIsCompleted(true);
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Payment processing failed';
+      setPaymentState(prev => ({ ...prev, error: errorMessage }));
+    } finally {
+      setPaymentState(prev => ({ ...prev, isProcessing: false }));
+    }
+  };
+
+  // PayPal payment error handler
+  const handlePayPalError = (error: string) => {
+    setPaymentState(prev => ({ ...prev, error, isProcessing: false }));
   };
 
   if (isCompleted) {
@@ -65,9 +169,15 @@ export function Checkout({ onNavigate }: CheckoutProps) {
             </p>
             <div className="bg-white rounded-xl shadow-md p-8 mb-8">
               <p className="text-gray-600 mb-4">Order Total</p>
-              <p className="text-4xl font-bold text-rose-600 mb-6">£{total.toFixed(2)}</p>
+              <p className="text-4xl font-bold text-rose-600 mb-6">£{(completedOrderData?.total || total).toFixed(2)}</p>
+              <div className="flex items-center justify-center space-x-2 mb-4">
+                <span className="text-sm text-gray-600">Paid with</span>
+                <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm font-medium">
+                  {completedOrderData?.paymentMethod === 'paypal' ? 'PayPal' : 'Card'}
+                </span>
+              </div>
               <p className="text-sm text-gray-600 mb-4">Confirmation email sent to</p>
-              <p className="font-medium text-gray-900">{formData.email}</p>
+              <p className="font-medium text-gray-900">{completedOrderData?.email || formData.email}</p>
             </div>
             <button
               onClick={() => {
@@ -173,44 +283,109 @@ export function Checkout({ onNavigate }: CheckoutProps) {
               </div>
 
               <div className="bg-white rounded-xl shadow-md p-6">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-6">Payment Information</h2>
+                <PaymentMethodSelector
+                  selectedMethod={paymentState.method}
+                  onMethodChange={(method) => setPaymentState(prev => ({ ...prev, method, error: null }))}
+                  disabled={paymentState.isProcessing}
+                  className="mb-6"
+                />
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-2">Card Number</label>
-                    <input
-                      type="text"
-                      name="cardNumber"
-                      value={formData.cardNumber}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\s/g, '');
-                        if (value.length <= 16) {
-                          const formatted = value.replace(/(\d{4})/g, '$1 ').trim();
-                          setFormData((prev) => ({
-                            ...prev,
-                            cardNumber: formatted,
-                          }));
-                        }
-                      }}
-                      required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-rose-600 font-mono"
-                      placeholder="1234 5678 9012 3456"
-                    />
+                {/* Error message display */}
+                {paymentState.error && (
+                  <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-red-800 font-medium">Payment Error</span>
+                    </div>
+                    <p className="text-red-600 text-sm mt-1">{paymentState.error}</p>
                   </div>
+                )}
 
-                  <p className="text-sm text-gray-600 mt-4">
-                    For testing, use card number: <span className="font-mono font-semibold">4242 4242 4242 4242</span>
-                  </p>
-                </div>
+                {/* Card Payment Form */}
+                {paymentState.method === 'card' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-900 mb-2">Card Number</label>
+                      <input
+                        type="text"
+                        name="cardNumber"
+                        value={formData.cardNumber}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\s/g, '');
+                          if (value.length <= 16) {
+                            const formatted = value.replace(/(\d{4})/g, '$1 ').trim();
+                            setFormData((prev) => ({
+                              ...prev,
+                              cardNumber: formatted,
+                            }));
+                          }
+                        }}
+                        required
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-rose-600 font-mono"
+                        placeholder="1234 5678 9012 3456"
+                      />
+                    </div>
+
+                    <p className="text-sm text-gray-600 mt-4">
+                      For testing, use card number: <span className="font-mono font-semibold">4242 4242 4242 4242</span>
+                    </p>
+                  </div>
+                )}
+
+                {/* PayPal Payment */}
+                {paymentState.method === 'paypal' && (
+                  <div className="space-y-4">
+                    <div className="text-sm text-gray-600 mb-4">
+                      <p>You will be redirected to PayPal to complete your payment securely.</p>
+                    </div>
+                    
+                    {/* Form validation check for PayPal */}
+                    {formData.email && formData.fullName && formData.address && formData.city && formData.postcode ? (
+                      <PayPalButton
+                        cartItems={items.map(item => ({ product: item.product, quantity: item.quantity }))}
+                        customerInfo={{
+                          email: formData.email,
+                          fullName: formData.fullName,
+                          address: getOrderAddress()
+                        }}
+                        onSuccess={handlePayPalSuccess}
+                        onError={handlePayPalError}
+                        disabled={paymentState.isProcessing}
+                        className="mt-4"
+                      />
+                    ) : (
+                      <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p className="text-yellow-800 text-sm">
+                          Please fill in all shipping information above to enable PayPal payment.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
-              <button
-                type="submit"
-                disabled={isProcessing}
-                className="w-full bg-rose-600 hover:bg-rose-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-4 rounded-lg font-semibold transition-colors text-lg"
-              >
-                {isProcessing ? 'Processing...' : 'Complete Purchase'}
-              </button>
+              {/* Card Payment Submit Button */}
+              {paymentState.method === 'card' && (
+                <button
+                  type="submit"
+                  disabled={paymentState.isProcessing || paymentState.method !== 'card'}
+                  className="w-full bg-rose-600 hover:bg-rose-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-4 rounded-lg font-semibold transition-colors text-lg"
+                >
+                  {paymentState.isProcessing ? 'Processing...' : 'Complete Purchase'}
+                </button>
+              )}
+              
+              {/* PayPal processing indicator */}
+              {paymentState.method === 'paypal' && paymentState.isProcessing && (
+                <div className="w-full bg-blue-50 border border-blue-200 text-blue-800 py-4 rounded-lg font-semibold text-lg text-center">
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                    <span>Processing PayPal Payment...</span>
+                  </div>
+                </div>
+              )}
             </form>
           </div>
 

@@ -6,8 +6,8 @@ import { AuthModal } from './AuthModal';
 import woolwitchLogo from '../assets/woolwitch.jpg';
 
 interface HeaderProps {
-  currentPage: 'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact' | 'privacy-policy' | 'terms-of-service';
-  onNavigate: (page: 'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact' | 'privacy-policy' | 'terms-of-service') => void;
+  currentPage: 'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact' | 'privacy-policy' | 'terms-of-service' | 'orders';
+  onNavigate: (page: 'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact' | 'privacy-policy' | 'terms-of-service' | 'orders') => void;
 }
 
 export function Header({ currentPage, onNavigate }: HeaderProps) {
@@ -21,12 +21,12 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
       await signOut();
       onNavigate('shop');
       setMobileMenuOpen(false);
-    } catch (error) {
+    } catch {
       // Keep minimal error logging for debugging
     }
   };
 
-  const handleNavigation = (page: 'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact' | 'privacy-policy' | 'terms-of-service') => {
+  const handleNavigation = (page: 'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact' | 'privacy-policy' | 'terms-of-service' | 'orders') => {
     onNavigate(page);
     setMobileMenuOpen(false);
   };
@@ -73,6 +73,18 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
                 }`}
               >
                 Admin
+              </button>
+            )}
+            {user && (
+              <button
+                onClick={() => handleNavigation('orders')}
+                className={`font-medium transition-colors ${
+                  currentPage === 'orders'
+                    ? 'text-rose-600'
+                    : 'text-gray-700 hover:text-rose-600'
+                }`}
+              >
+                My Orders
               </button>
             )}
             <button
@@ -175,6 +187,18 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
                 }`}
               >
                 Admin
+              </button>
+            )}
+            {user && (
+              <button
+                onClick={() => handleNavigation('orders')}
+                className={`block w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
+                  currentPage === 'orders'
+                    ? 'bg-rose-50 text-rose-600'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                My Orders
               </button>
             )}
             <button

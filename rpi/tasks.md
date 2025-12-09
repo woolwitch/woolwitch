@@ -1,151 +1,218 @@
-# Wool Witch GitHub Pages Deployment Tasks
+# PayPal Payment Integration - Remaining Implementation Tasks
 
-## Prerequisites Complete ✅
+## Overview
+Complete the PayPal integration for Wool Witch with remaining order management, testing, and production deployment tasks.
 
-- [x] Repository exists in woolwitch organization
-- [x] React app built with Vite + TypeScript
-- [x] Supabase configuration in place
-- [x] Development environment working
+## ✅ Completed (Phase 1 & 2)
+- Database schema migrations (orders, order_items, payments tables with RLS policies)
+- PayPal SDK integration with comprehensive TypeScript definitions
+- Environment configuration for sandbox/production modes
+- Order calculation utilities and database service functions
+- Payment method selector component (Card vs PayPal)
+- PayPal button component with SDK integration and error handling
+- Updated checkout flow supporting dual payment methods
+- Payment verification and order creation logic
+- Enhanced cart context with localStorage persistence
 
-## Phase 1: Basic GitHub Pages Deployment
+## 🚧 Phase 3: Order Management System (IN PROGRESS)
 
-### Task 1: Repository Setup
+### Priority 1: Set Up Real PayPal Sandbox Integration
 
-- [x] Enable GitHub Pages in repository settings
-  - Go to `Settings → Pages`
-  - Set Source to "Deploy from a branch"
-  - Select branch: `main`, folder: `/ (root)`
-- [x] Add GitHub repository secrets
-  - Go to `Settings → Secrets and variables → Actions`
-  - Add `VITE_SUPABASE_URL` (use development value for now)
-  - Add `VITE_SUPABASE_ANON_KEY` (use development value for now)
+- [ ] **Get PayPal Developer Account**
+  - Sign up at [developer.paypal.com](https://developer.paypal.com)
+  - Create sandbox application
+  - Copy Client ID
 
-### Task 2: GitHub Actions Workflow
+- [ ] **Update Environment**
 
-- [ ] Create `.github/workflows/` directory
-- [ ] Create `.github/workflows/deploy.yml` with deployment configuration
-- [ ] Test workflow by pushing to main branch
+  ```bash
+  # Replace in .env.local
+  VITE_PAYPAL_CLIENT_ID_SANDBOX=your_real_sandbox_client_id
+  ```
 
-### Task 3: Application Configuration
+- [ ] **Test Checkout Flow**
+  - Add items to cart
+  - Proceed to checkout
+  - Fill shipping information
+  - Select PayPal payment
+  - Complete PayPal sandbox payment
+  - Verify order creation in Supabase Studio
 
-- [ ] Verify `vite.config.ts` is correctly configured for GitHub Pages
-- [ ] Create `public/404.html` for SPA routing support
-- [ ] Test build process locally with `npm run build`
+### Priority 2: Fix TypeScript Errors
 
-### Task 4: Environment Handling
+- [ ] **Order Service Types**
+  - Resolve supabase client schema typing issues in `src/lib/orderService.ts`
+  - Fix `.eq()` parameter type mismatches
+  - Complete `getUserOrders` and `getAllOrders` with proper joins
 
-- [ ] Verify Supabase client configuration handles environment variables
-- [ ] Test that build fails gracefully if environment variables are missing
-- [ ] Ensure no hardcoded localhost URLs in the code
+### Priority 3: User Order History
 
-## Phase 2: Testing & Validation
+- [ ] **Create Orders Page**
+  - Basic order history for logged-in users at `src/pages/Orders.tsx`
+  - List user's orders with status and payment method
+  - Order details view with items and delivery info
 
-### Task 5: Local Testing
+- [ ] **Add Navigation**
+  - "My Orders" link in header
+  - Add route handling in `App.tsx`
+  - Authentication-required access control
 
-- [ ] Run `npm run build` locally
-- [ ] Run `npm run preview` to test built application
-- [ ] Verify all routes work correctly
-- [ ] Test cart functionality
-- [ ] Test authentication flow (if applicable)
+- [ ] **Order Details Component**
+  - `src/components/OrderDetails.tsx` for expandable order info
+  - Payment status display (especially PayPal transaction IDs)
+  - Order tracking and status updates
 
-### Task 6: Deployment Testing
+### Priority 4: Admin Order Management
 
-- [ ] Push changes to main branch
-- [ ] Monitor GitHub Actions workflow execution
-- [ ] Visit deployed site at `https://woolwitch.github.io`
-- [ ] Test core functionality on deployed site
-- [ ] Check browser console for errors
+- [ ] **Admin Orders Section**
+  - Add to existing admin interface in `src/pages/Admin.tsx`
+  - List all orders with filters (status, payment method, date)
+  - Order search and sorting capabilities
 
-### Task 7: Issue Resolution
+- [ ] **Order Status Updates**
+  - Allow admins to change order status
+  - Status change logging and timestamps
+  - Payment reconciliation view
 
-- [ ] Fix any CORS issues with Supabase
-- [ ] Resolve any missing asset/image problems
-- [ ] Address any routing issues
-- [ ] Verify responsive design on mobile
+- [ ] **Payment Details Display**
+  - View PayPal transaction details
+  - Payment status tracking and troubleshooting
+  - Refund preparation (UI only, actual refunds future phase)
 
-## Phase 3: Production Readiness (Optional for Now)
+## 🚀 Phase 4: Testing, Polish & Launch
 
-### Task 8: Hosted Supabase Project
+### 4.1 Comprehensive Testing
 
-- [ ] Create new Supabase project for hosting
-- [ ] Set up database schema and data
-- [ ] Upload product images to Supabase Storage
-- [ ] Update GitHub secrets with hosted Supabase credentials
-- [ ] Test with hosted backend
+- [ ] **PayPal sandbox testing**
+  - Complete payment flow testing with test accounts
+  - Different PayPal account scenarios (personal, business)
+  - Mobile PayPal interface testing
 
-### Task 9: Performance Optimization
+- [ ] **Payment method switching**
+  - Card to PayPal and back switching during checkout
+  - Form state preservation during payment method changes
+  - Edge cases and error recovery
 
-- [ ] Review bundle size with `npm run build`
-- [ ] Optimize images and assets
-- [ ] Add basic SEO meta tags
-- [ ] Test page load performance
+- [ ] **Database integrity testing**
+  - Order creation under various scenarios
+  - Payment failure handling and cleanup
+  - Concurrent order creation testing
 
-### Task 10: Monitoring Setup
+- [ ] **Cross-browser and mobile testing**
+  - PayPal SDK compatibility across browsers
+  - Mobile responsive design verification
+  - Touch interface optimization
 
-- [ ] Set up GitHub Actions notifications for failed builds
-- [ ] Document deployment process
-- [ ] Create rollback procedures
+### 4.2 Error Handling and UX Polish
 
-## Future Enhancements (Phase 4)
+- [ ] **Comprehensive error scenarios**
+  - PayPal service unavailable fallbacks
+  - Network timeout handling
+  - Partial payment failure recovery
 
-### Task 11: Custom Domain (When Ready)
+- [ ] **Loading states and feedback**
+  - PayPal button loading indicators
+  - Payment processing status updates
+  - Clear success/failure messaging
 
-- [ ] Purchase woolwitch.co.uk domain
-- [ ] Configure DNS settings
-- [ ] Set up custom domain in GitHub Pages
-- [ ] Enable HTTPS enforcement
+- [ ] **Accessibility improvements**
+  - Screen reader support for payment options
+  - Keyboard navigation for payment selection
+  - ARIA labels for PayPal integration
 
-### Task 12: Advanced Features
+### 4.3 Documentation and Deployment
 
-- [ ] Add Google Analytics or alternative
-- [ ] Implement PWA features
-- [ ] Add structured data for SEO
-- [ ] Set up automated backups
+- [ ] **Update project documentation**
+  - README.md with PayPal setup instructions
+  - Environment variable documentation
+  - Testing guide for PayPal sandbox
 
-## Quick Start Checklist
+- [ ] **Production environment preparation**
+  - PayPal production account setup
+  - Production client ID configuration
+  - Database migration deployment plan
 
-For immediate deployment, focus on these essential tasks:
+- [ ] **Admin training materials**
+  - Order management workflow documentation
+  - Payment troubleshooting guide
+  - Customer service procedures for PayPal issues
 
-1. **Enable GitHub Pages** (Task 1)
-2. **Create deployment workflow** (Task 2)
-3. **Test locally** (Task 5)
-4. **Deploy and verify** (Task 6)
+## Future Enhancement Backlog 🔮
 
-## Current Status
+### Advanced PayPal Features
 
-- [ ] **Phase 1**: Basic deployment setup
-- [ ] **Phase 2**: Testing and validation
-- [ ] **Phase 3**: Production readiness
-- [ ] **Phase 4**: Future enhancements
+- [ ] **PayPal Credit integration** - Pay in 4 installments
+- [ ] **Express Checkout** - Skip shipping form for PayPal users
+- [ ] **PayPal address auto-fill** - Use PayPal shipping addresses
+- [ ] **Smart Payment Buttons** - Dynamic sizing and styling
 
-## Notes
+### Order Management Enhancements
 
-### Environment Variables Needed
+- [ ] **Email notifications** - Order confirmation and status updates
+- [ ] **Order tracking integration** - Shipping provider APIs
+- [ ] **Refund processing** - Direct PayPal refund API integration
+- [ ] **Bulk order operations** - Admin bulk status updates
 
-For development deployment:
+### Analytics and Reporting
 
-```
-VITE_SUPABASE_URL=http://localhost:54321
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
-```
+- [ ] **Payment method analytics** - Track PayPal vs card usage
+- [ ] **Conversion rate monitoring** - Payment method impact on sales
+- [ ] **Revenue reporting** - Separate tracking by payment method
+- [ ] **Customer insights** - Payment preference patterns
 
-### Known Limitations
+### International Expansion
 
-- Using localhost Supabase URL (won't work for real users)
-- No custom domain yet
-- Basic deployment pipeline (no staging environment)
+- [ ] **Multi-currency support** - Beyond GBP for global sales
+- [ ] **Localized PayPal** - Regional PayPal configurations
+- [ ] **International shipping** - Extended delivery charge calculations
+- [ ] **Tax calculation** - VAT and international tax handling
 
-### Success Criteria
+---
 
-- [ ] Site loads at https://woolwitch.github.io
-- [ ] No console errors in browser
-- [ ] Product catalog displays correctly
-- [ ] Navigation works between pages
-- [ ] Cart functionality works (with localStorage)
+## Success Criteria
 
-## Help & Resources
+### Technical Metrics
 
-- [GitHub Pages Documentation](https://docs.github.com/en/pages)
-- [GitHub Actions Documentation](https://docs.github.com/en/actions)
-- [Vite Build Guide](https://vitejs.dev/guide/build.html)
-- [Supabase Documentation](https://supabase.com/docs)
+- ✅ Payment completion rate >95% for both card and PayPal
+- ✅ PayPal button load time <2 seconds
+- ✅ Error rate <2% for payment processing
+- ✅ Order creation success rate >99%
+
+### User Experience Goals
+
+- ✅ Seamless payment method switching
+- ✅ Clear order confirmation and tracking
+- ✅ Mobile-optimized PayPal experience
+- ✅ Intuitive admin order management
+
+### Business Objectives
+
+- ✅ Increased checkout conversion with PayPal option
+- ✅ Reduced cart abandonment rates
+- ✅ Enhanced customer trust and payment security
+- ✅ Comprehensive order audit trail for business operations
+
+---
+
+## Notes for Implementation
+
+### Development Workflow
+
+1. Use `task dev` to start full development environment
+2. Run `task db:reset` if database schema changes cause issues
+3. Test PayPal integration exclusively in sandbox environment
+4. Use `task test` regularly during development for lint/typecheck
+
+### Key Dependencies
+
+- PayPal JavaScript SDK v4
+- Existing Supabase client configuration
+- Current cart context and checkout flow
+- Tailwind CSS for consistent styling
+
+### Critical Considerations
+
+- Maintain backward compatibility with existing mock card payments
+- Ensure all PayPal transactions are properly recorded in database
+- Implement proper error boundaries for payment failures
+- Consider mobile-first design for payment interfaces

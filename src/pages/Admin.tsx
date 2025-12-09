@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Plus, Edit2, Trash2, Save, X, Upload } from 'lucide-react';
+import { Plus, Edit2, Trash2, Save, X, Upload, Package, ShoppingCart } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import type { Product } from '../types/database';
+import type { Product, Order } from '../types/database';
 import { useAuth } from '../contexts/AuthContext';
+import { getAllOrders, updateOrderStatus, getOrderStatistics, formatOrderAddress, formatOrderStatus, getOrderStatusColor } from '../lib/orderService';
 
 interface ProductFormData {
   name: string;
@@ -17,7 +18,10 @@ interface ProductFormData {
 
 export function Admin() {
   const { isAdmin } = useAuth();
+  const [activeTab, setActiveTab] = useState<'products' | 'orders'>('products');
   const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [orderStats, setOrderStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -37,9 +41,14 @@ export function Admin() {
 
   useEffect(() => {
     if (isAdmin) {
-      fetchAllProducts();
+      if (activeTab === 'products') {
+        fetchAllProducts();
+      } else {
+        fetchAllOrders();
+        fetchOrderStatistics();
+      }
     }
-  }, [isAdmin]);
+  }, [isAdmin, activeTab]);
 
   async function fetchAllProducts() {
     try {
@@ -54,6 +63,40 @@ export function Admin() {
       // Keep minimal error logging for debugging
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchAllOrders() {
+    try {
+      setLoading(true);
+      const ordersData = await getAllOrders({ limit: 100 });
+      setOrders(ordersData);
+    } catch {
+      console.error('Error loading orders');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function fetchOrderStatistics() {
+    try {
+      const stats = await getOrderStatistics();
+      setOrderStats(stats);
+    } catch {
+      console.error('Error loading order statistics');
+    }
+  }
+
+  async function handleUpdateOrderStatus(orderId: string, newStatus: Order['status']) {
+    try {
+      await updateOrderStatus(orderId, newStatus);
+      setOrders(orders.map(order => 
+        order.id === orderId ? { ...order, status: newStatus } : order
+      ));
+      // Refresh stats
+      fetchOrderStatistics();
+    } catch {
+      console.error('Error updating order status');
     }
   }
 
@@ -262,16 +305,48 @@ export function Admin() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Tab Navigation */}
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Product Management</h1>
-          <button
-            onClick={() => setIsAdding(true)}
-            className="flex items-center space-x-2 bg-rose-600 text-white px-4 py-2 rounded-lg hover:bg-rose-700 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            <span>Add Product</span>
-          </button>
+          <div className="flex space-x-8">
+            <button
+              onClick={() => setActiveTab('products')}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                activeTab === 'products'
+                  ? 'bg-rose-600 text-white'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
+            >
+              <Package className="w-5 h-5" />
+              <span>Products</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('orders')}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                activeTab === 'orders'
+                  ? 'bg-rose-600 text-white'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
+            >
+              <ShoppingCart className="w-5 h-5" />
+              <span>Orders</span>
+            </button>
+          </div>
+          
+          {activeTab === 'products' && (
+            <button
+              onClick={() => setIsAdding(true)}
+              className="flex items-center space-x-2 bg-rose-600 text-white px-4 py-2 rounded-lg hover:bg-rose-700 transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              <span>Add Product</span>
+            </button>
+          )}
         </div>
+
+        {/* Tab Content */}
+        {activeTab === 'products' ? (
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-8">Product Management</h1>
 
         {(isAdding || editingId) && (
           <div className="bg-white rounded-lg shadow-md p-6 mb-8">
@@ -479,6 +554,125 @@ export function Admin() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+        </div>
+        ) : (
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-8">Order Management</h1>
+            
+            {/* Order Statistics */}
+            {orderStats && (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Total Orders</h3>
+                  <p className="text-3xl font-bold text-rose-600">{orderStats.totalOrders}</p>
+                </div>
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Total Revenue</h3>
+                  <p className="text-3xl font-bold text-green-600">
+                    £{orderStats.totalRevenue.toFixed(2)}
+                  </p>
+                </div>
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Payment Methods</h3>
+                  <div className="space-y-1">
+                    {Object.entries(orderStats.ordersByPaymentMethod).map(([method, count]) => (
+                      <p key={method} className="text-sm text-gray-600">
+                        {method}: {count as number}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Order Status</h3>
+                  <div className="space-y-1">
+                    {Object.entries(orderStats.ordersByStatus).map(([status, count]) => (
+                      <p key={status} className="text-sm text-gray-600">
+                        {formatOrderStatus(status as Order['status'])}: {count as number}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Orders Table */}
+            {loading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600"></div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg shadow overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Order ID
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Customer
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Total
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Payment Method
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {orders.map((order) => (
+                      <tr key={order.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          #{order.id.slice(-8).toUpperCase()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{order.full_name}</div>
+                          <div className="text-sm text-gray-500">{order.email}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          £{order.total.toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
+                          {order.payment_method === 'paypal' ? 'PayPal' : 'Card'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <select
+                            value={order.status}
+                            onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value as Order['status'])}
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getOrderStatusColor(order.status)}`}
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="paid">Paid</option>
+                            <option value="shipped">Shipped</option>
+                            <option value="delivered">Delivered</option>
+                            <option value="cancelled">Cancelled</option>
+                          </select>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button className="text-rose-600 hover:text-rose-900 text-sm">
+                            View Details
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </div>

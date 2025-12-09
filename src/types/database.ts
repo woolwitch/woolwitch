@@ -651,6 +651,146 @@ export type Database = {
   }
   woolwitch: {
     Tables: {
+      order_items: {
+        Row: {
+          created_at: string | null
+          delivery_charge: number
+          id: string
+          order_id: string
+          product_id: string | null
+          product_name: string
+          product_price: number
+          quantity: number
+        }
+        Insert: {
+          created_at?: string | null
+          delivery_charge: number
+          id?: string
+          order_id: string
+          product_id?: string | null
+          product_name: string
+          product_price: number
+          quantity: number
+        }
+        Update: {
+          created_at?: string | null
+          delivery_charge?: number
+          id?: string
+          order_id?: string
+          product_id?: string | null
+          product_name?: string
+          product_price?: number
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          address: Json
+          created_at: string | null
+          delivery_total: number
+          email: string
+          full_name: string
+          id: string
+          payment_method: string
+          status: string
+          subtotal: number
+          total: number
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          address: Json
+          created_at?: string | null
+          delivery_total: number
+          email: string
+          full_name: string
+          id?: string
+          payment_method: string
+          status?: string
+          subtotal: number
+          total: number
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          address?: Json
+          created_at?: string | null
+          delivery_total?: number
+          email?: string
+          full_name?: string
+          id?: string
+          payment_method?: string
+          status?: string
+          subtotal?: number
+          total?: number
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          currency: string | null
+          id: string
+          order_id: string
+          payment_id: string | null
+          payment_method: string
+          paypal_details: Json | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          order_id: string
+          payment_id?: string | null
+          payment_method: string
+          paypal_details?: Json | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          order_id?: string
+          payment_id?: string | null
+          payment_method?: string
+          paypal_details?: Json | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           category: string
@@ -861,6 +1001,74 @@ export const Constants = {
   },
 } as const
 
-// Type aliases for easier use
-export type Product = Database['woolwitch']['Tables']['products']['Row'];
+// ========================================
+// ORDER SYSTEM INTERFACES
+// ========================================
+
+// Address interface for order shipping info
+export interface OrderAddress {
+  address: string;
+  city: string;
+  postcode: string;
+}
+
+// Strongly typed order with proper address and status
+export interface Order extends Database['woolwitch']['Tables']['orders']['Row'] {
+  address: OrderAddress;
+  status: 'pending' | 'paid' | 'shipped' | 'delivered' | 'cancelled';
+  payment_method: 'card' | 'paypal';
+}
+
+// Order with items for display purposes
+export interface OrderWithItems extends Order {
+  order_items: OrderItem[];
+  payments?: Payment[];
+}
+
+// Order item with product information
+export type OrderItem = Database['woolwitch']['Tables']['order_items']['Row'];
+
+// Payment record type
+export interface Payment extends Database['woolwitch']['Tables']['payments']['Row'] {
+  status: 'pending' | 'completed' | 'failed' | 'refunded';
+  payment_method: 'card' | 'paypal';
+  currency: string;
+}
+
+// PayPal payment details structure
+export interface PayPalDetails {
+  paypal_order_id?: string;
+  payer_id?: string;
+  payer_email?: string;
+  transaction_id?: string;
+  capture_id?: string;
+  gross_amount?: number;
+  fee_amount?: number;
+  net_amount?: number;
+}
+
+// Cart item interface (for order creation)
+export interface CartItem {
+  product: Database['woolwitch']['Tables']['products']['Row'];
+  quantity: number;
+}
+
+// Order creation data interface
+export interface CreateOrderData {
+  email: string;
+  fullName: string;
+  address: OrderAddress;
+  cartItems: CartItem[];
+  paymentMethod: 'card' | 'paypal';
+  paymentId?: string; // For PayPal orders
+  paypalDetails?: PayPalDetails;
+}
+
+// Order summary for display
+export interface OrderSummary {
+  subtotal: number;
+  deliveryTotal: number;
+  total: number;
+  itemCount: number;
+}
 

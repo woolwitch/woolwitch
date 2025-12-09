@@ -9,9 +9,10 @@ import { About } from './pages/About';
 import { Contact } from './pages/Contact';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { TermsOfService } from './pages/TermsOfService';
+import Orders from './pages/Orders';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact' | 'privacy-policy' | 'terms-of-service'>('shop');
+  const [currentPage, setCurrentPage] = useState<'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact' | 'privacy-policy' | 'terms-of-service' | 'orders'>('shop');
 
   const renderPage = () => {
     const handleCartNavigation = (page: 'shop' | 'cart' | 'checkout') => {
@@ -31,6 +32,8 @@ function App() {
         return <Checkout onNavigate={handleCheckoutNavigation} />;
       case 'admin':
         return <Admin />;
+      case 'orders':
+        return <Orders />;
       case 'about':
         return <About />;
       case 'contact':
