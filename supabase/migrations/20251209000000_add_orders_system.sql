@@ -1,9 +1,9 @@
 /*
-  # Orders and Payments System - PayPal Integration
+  # Orders and Payments System - Complete Implementation
 
   ## Overview
-  Adds comprehensive order management system to support PayPal payments
-  alongside existing card payment functionality.
+  Adds comprehensive order management system to support PayPal and card payments.
+  This migration includes proper RLS policies, table grants, and anonymous user support.
 
   ## What This Migration Creates
   
@@ -15,7 +15,8 @@
   ### Security & Permissions  
   - Row Level Security policies for user/admin access control
   - Users can view their own orders, admins can manage all orders
-  - Proper indexing for performance
+  - Anonymous users can create orders
+  - Proper table-level grants for all roles
   
   ### Features
   - Support for both 'card' and 'paypal' payment methods
@@ -23,6 +24,7 @@
   - Payment status tracking (pending, completed, failed, refunded)
   - Product information snapshots to preserve order history
   - Delivery charge tracking per item
+  - Anonymous checkout support
 */
 
 -- ========================================
@@ -54,24 +56,28 @@ CREATE INDEX idx_orders_status ON woolwitch.orders(status);
 CREATE INDEX idx_orders_created_at ON woolwitch.orders(created_at DESC);
 CREATE INDEX idx_orders_email ON woolwitch.orders(email);
 
--- RLS Policies
+-- RLS Policies - Handles authenticated users, anonymous users, and admins
 CREATE POLICY "Users can view their own orders" ON woolwitch.orders
   FOR SELECT USING (
-    auth.uid() = user_id OR 
-    woolwitch.is_admin()
+    (select auth.uid()) = user_id OR 
+    (select woolwitch.is_admin())
   );
 
 CREATE POLICY "Users can create their own orders" ON woolwitch.orders
   FOR INSERT WITH CHECK (
-    auth.uid() = user_id OR 
-    woolwitch.is_admin()
+    -- Anonymous users (NULL user_id, checked first)
+    ((select auth.uid()) IS NULL AND user_id IS NULL)
+    -- Authenticated users can create orders for themselves  
+    OR ((select auth.uid()) IS NOT NULL AND (select auth.uid()) = user_id)
+    -- Admins can create any orders
+    OR ((select auth.uid()) IS NOT NULL AND (select woolwitch.is_admin()))
   );
 
 CREATE POLICY "Admins can update all orders" ON woolwitch.orders
-  FOR UPDATE USING (woolwitch.is_admin());
+  FOR UPDATE USING ((select woolwitch.is_admin()));
 
 CREATE POLICY "Admins can delete orders" ON woolwitch.orders
-  FOR DELETE USING (woolwitch.is_admin());
+  FOR DELETE USING ((select woolwitch.is_admin()));
 
 -- ========================================
 -- ORDER ITEMS TABLE
@@ -102,7 +108,7 @@ CREATE POLICY "Users can view items of their own orders" ON woolwitch.order_item
     EXISTS (
       SELECT 1 FROM woolwitch.orders 
       WHERE id = order_id 
-      AND (auth.uid() = user_id OR woolwitch.is_admin())
+      AND ((select auth.uid()) = user_id OR (select woolwitch.is_admin()))
     )
   );
 
@@ -111,15 +117,19 @@ CREATE POLICY "Users can create items for their own orders" ON woolwitch.order_i
     EXISTS (
       SELECT 1 FROM woolwitch.orders 
       WHERE id = order_id 
-      AND (auth.uid() = user_id OR woolwitch.is_admin())
+      AND (
+        ((select auth.uid()) IS NULL AND user_id IS NULL)
+        OR ((select auth.uid()) IS NOT NULL AND (select auth.uid()) = user_id)
+        OR ((select auth.uid()) IS NOT NULL AND (select woolwitch.is_admin()))
+      )
     )
   );
 
 CREATE POLICY "Admins can update all order items" ON woolwitch.order_items
-  FOR UPDATE USING (woolwitch.is_admin());
+  FOR UPDATE USING ((select woolwitch.is_admin()));
 
 CREATE POLICY "Admins can delete order items" ON woolwitch.order_items
-  FOR DELETE USING (woolwitch.is_admin());
+  FOR DELETE USING ((select woolwitch.is_admin()));
 
 -- ========================================
 -- PAYMENTS TABLE
@@ -154,7 +164,7 @@ CREATE POLICY "Users can view payments for their own orders" ON woolwitch.paymen
     EXISTS (
       SELECT 1 FROM woolwitch.orders 
       WHERE id = order_id 
-      AND (auth.uid() = user_id OR woolwitch.is_admin())
+      AND ((select auth.uid()) = user_id OR (select woolwitch.is_admin()))
     )
   );
 
@@ -163,15 +173,19 @@ CREATE POLICY "System can create payments" ON woolwitch.payments
     EXISTS (
       SELECT 1 FROM woolwitch.orders 
       WHERE id = order_id 
-      AND (auth.uid() = user_id OR woolwitch.is_admin())
+      AND (
+        ((select auth.uid()) IS NULL AND user_id IS NULL)
+        OR ((select auth.uid()) IS NOT NULL AND (select auth.uid()) = user_id)
+        OR ((select auth.uid()) IS NOT NULL AND (select woolwitch.is_admin()))
+      )
     )
   );
 
 CREATE POLICY "Admins can update all payments" ON woolwitch.payments
-  FOR UPDATE USING (woolwitch.is_admin());
+  FOR UPDATE USING ((select woolwitch.is_admin()));
 
 CREATE POLICY "Admins can delete payments" ON woolwitch.payments
-  FOR DELETE USING (woolwitch.is_admin());
+  FOR DELETE USING ((select woolwitch.is_admin()));
 
 -- ========================================
 -- UTILITY FUNCTIONS
@@ -196,10 +210,22 @@ CREATE TRIGGER update_payments_updated_at
   FOR EACH ROW EXECUTE FUNCTION woolwitch.update_updated_at_column();
 
 -- ========================================
--- GRANTS AND PERMISSIONS
+-- TABLE PERMISSIONS
 -- ========================================
 
--- Grant usage on sequences for authenticated users
+-- Grant permissions on orders table
+GRANT SELECT, INSERT, UPDATE, DELETE ON woolwitch.orders TO authenticated;
+GRANT SELECT, INSERT ON woolwitch.orders TO anon;
+
+-- Grant permissions on order_items table
+GRANT SELECT, INSERT, UPDATE, DELETE ON woolwitch.order_items TO authenticated;
+GRANT SELECT, INSERT ON woolwitch.order_items TO anon;
+
+-- Grant permissions on payments table
+GRANT SELECT, INSERT, UPDATE, DELETE ON woolwitch.payments TO authenticated;
+GRANT SELECT, INSERT ON woolwitch.payments TO anon;
+
+-- Grant usage on sequences for auto-generated IDs
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA woolwitch TO authenticated;
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA woolwitch TO anon;
 
@@ -211,9 +237,9 @@ GRANT EXECUTE ON FUNCTION woolwitch.update_updated_at_column() TO anon;
 -- COMMENTS FOR DOCUMENTATION
 -- ========================================
 
-COMMENT ON TABLE woolwitch.orders IS 'Customer orders with shipping and payment information';
-COMMENT ON TABLE woolwitch.order_items IS 'Individual products within each order with historical pricing';
-COMMENT ON TABLE woolwitch.payments IS 'Payment transaction records for audit and reconciliation';
+COMMENT ON TABLE woolwitch.orders IS 'Customer orders with shipping and payment information - RLS controls access, table grants enable basic operations';
+COMMENT ON TABLE woolwitch.order_items IS 'Individual products within each order with historical pricing - RLS controls access, table grants enable basic operations';
+COMMENT ON TABLE woolwitch.payments IS 'Payment transaction records for audit and reconciliation - RLS controls access, table grants enable basic operations';
 
 COMMENT ON COLUMN woolwitch.orders.address IS 'JSON object containing address, city, and postcode';
 COMMENT ON COLUMN woolwitch.orders.status IS 'Order status: pending, paid, shipped, delivered, cancelled';
@@ -224,3 +250,6 @@ COMMENT ON COLUMN woolwitch.order_items.product_price IS 'Product price at time 
 
 COMMENT ON COLUMN woolwitch.payments.payment_id IS 'External payment system identifier (PayPal transaction ID, etc.)';
 COMMENT ON COLUMN woolwitch.payments.paypal_details IS 'Full PayPal response data for audit and troubleshooting';
+
+COMMENT ON POLICY "Users can create their own orders" ON woolwitch.orders IS 
+  'Allows authenticated users to create their own orders and anonymous users to create orders with NULL user_id';

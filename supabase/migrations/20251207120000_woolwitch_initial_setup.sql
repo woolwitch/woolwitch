@@ -102,8 +102,12 @@ CREATE TABLE woolwitch.products (
   category text NOT NULL,
   stock_quantity integer DEFAULT 0 CHECK (stock_quantity >= 0),
   is_available boolean DEFAULT true,
+  delivery_charge numeric(10, 2) DEFAULT 0 CHECK (delivery_charge >= 0),
   created_at timestamptz DEFAULT now()
 );
+
+-- Add comment for documentation
+COMMENT ON COLUMN woolwitch.products.delivery_charge IS 'Delivery charge for this specific product in pounds (£)';
 
 -- Enable RLS
 ALTER TABLE woolwitch.products ENABLE ROW LEVEL SECURITY;
@@ -116,23 +120,23 @@ CREATE POLICY "Product visibility policy"
   ON woolwitch.products
   FOR SELECT
   USING (
-    is_available = true OR woolwitch.is_admin()
+    is_available = true OR (select woolwitch.is_admin())
   );
 
 CREATE POLICY "Admins can insert products"
   ON woolwitch.products
   FOR INSERT
-  WITH CHECK (woolwitch.is_admin());
+  WITH CHECK ((select woolwitch.is_admin()));
 
 CREATE POLICY "Admins can update products"
   ON woolwitch.products
   FOR UPDATE
-  USING (woolwitch.is_admin());
+  USING ((select woolwitch.is_admin()));
 
 CREATE POLICY "Admins can delete products"
   ON woolwitch.products
   FOR DELETE
-  USING (woolwitch.is_admin());
+  USING ((select woolwitch.is_admin()));
 
 -- ========================================
 -- USER MANAGEMENT AUTOMATION
@@ -186,13 +190,13 @@ WITH CHECK (bucket_id = 'product-images');
 CREATE POLICY "Admin Delete for Product Images"
 ON storage.objects FOR DELETE
 TO authenticated
-USING (bucket_id = 'product-images' AND woolwitch.is_admin());
+USING (bucket_id = 'product-images' AND (select woolwitch.is_admin()));
 
 CREATE POLICY "Admin Update for Product Images"
 ON storage.objects FOR UPDATE
 TO authenticated
-USING (bucket_id = 'product-images' AND woolwitch.is_admin())
-WITH CHECK (bucket_id = 'product-images' AND woolwitch.is_admin());
+USING (bucket_id = 'product-images' AND (select woolwitch.is_admin()))
+WITH CHECK (bucket_id = 'product-images' AND (select woolwitch.is_admin()));
 
 -- ========================================
 -- TABLE PERMISSIONS
