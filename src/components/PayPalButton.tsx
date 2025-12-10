@@ -55,9 +55,11 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
   style = {}
 }) => {
   const paypalRef = useRef<HTMLDivElement>(null);
+  const configRef = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [buttonRendered, setButtonRendered] = useState(false);
 
   // Calculate order totals
   const subtotal = calculateSubtotal(cartItems);
@@ -72,18 +74,42 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
       return;
     }
 
-    // Load PayPal SDK
-    loadPayPalSDK();
+    // Load PayPal SDK if not already loaded
+    if (!isSDKLoaded && !error) {
+      loadPayPalSDK();
+    }
   }, []);
+
+  // Re-render button when dependencies change and SDK is loaded
+  useEffect(() => {
+    if (isSDKLoaded && window.paypal && !disabled && !error) {
+      const shouldRerender = 
+        !buttonRendered || 
+        JSON.stringify(cartItems) !== JSON.stringify(configRef.current?.cartItems) ||
+        JSON.stringify(customerInfo) !== JSON.stringify(configRef.current?.customerInfo);
+      
+      if (shouldRerender) {
+        console.log('Re-rendering PayPal button due to dependency change');
+        renderPayPalButton(window.paypal);
+      }
+    }
+  }, [isSDKLoaded, cartItems, customerInfo, disabled, error, buttonRendered]);
 
   const loadPayPalSDK = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
+      // Get PayPal client ID from configuration
+      const config = getPayPalConfig();
+      const clientId = config.clientId;
+
+      console.log('Loading PayPal SDK with client ID:', clientId?.substring(0, 10) + '...');
+
       // Use the window.loadPayPalSDK function defined in index.html
       if (window.loadPayPalSDK) {
-        const paypal = await window.loadPayPalSDK();
+        const paypal = await window.loadPayPalSDK(clientId);
+        console.log('PayPal SDK loaded successfully');
         setIsSDKLoaded(true);
         renderPayPalButton(paypal);
       } else {
@@ -91,6 +117,7 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load PayPal SDK';
+      console.error('PayPal SDK loading error:', err);
       setError(errorMessage);
       onError(errorMessage);
     } finally {
@@ -99,139 +126,181 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
   };
 
   const renderPayPalButton = (paypal: PayPalNamespace) => {
-    if (!paypalRef.current || disabled) return;
+    if (!paypalRef.current || disabled) {
+      console.log('PayPal button render skipped:', { hasRef: !!paypalRef.current, disabled });
+      return;
+    }
 
-    // Clear any existing PayPal button
-    paypalRef.current.innerHTML = '';
+    try {
+      // Clear any existing PayPal button
+      paypalRef.current.innerHTML = '';
+      setButtonRendered(false);
+      console.log('Rendering PayPal button...');
 
-    const config = getPayPalConfig();
-
-    const buttonStyle = {
-      layout: style.layout || 'vertical',
-      color: style.color || 'gold',
-      shape: style.shape || 'rect',
-      height: style.height || 45,
-      tagline: false,
-      ...style
-    };
-
-    paypal.Buttons({
-      style: buttonStyle,
+      const config = getPayPalConfig();
       
-      createOrder: async (_data: any, actions: any) => {
-        try {
-          // Validate cart items before creating order
-          if (cartItems.length === 0) {
-            throw new Error('Cart is empty');
-          }
+      // Store current config for comparison
+      configRef.current = {
+        ...config,
+        cartItems: JSON.parse(JSON.stringify(cartItems)),
+        customerInfo: JSON.parse(JSON.stringify(customerInfo))
+      };
 
-          // Create PayPal order
-          return await actions.order.create({
-            intent: 'CAPTURE',
-            purchase_units: [{
-              description: `Wool Witch Order - ${cartItems.length} item(s)`,
-              amount: {
-                currency_code: config.currency,
-                value: total.toFixed(2),
-                breakdown: {
-                  item_total: {
+      const buttonStyle = {
+        layout: style.layout || 'vertical',
+        color: style.color || 'gold',
+        shape: style.shape || 'rect',
+        height: style.height || 45,
+        tagline: false,
+        ...style
+      };
+
+      console.log('PayPal button style:', buttonStyle);
+      console.log('Cart items for PayPal:', cartItems.length, 'items');
+      console.log('Total amount:', total);
+
+      const buttonsComponent = paypal.Buttons({
+        style: buttonStyle,
+      
+        createOrder: async (_data: any, actions: any) => {
+          try {
+            console.log('Creating PayPal order...');
+            // Validate cart items before creating order
+            if (cartItems.length === 0) {
+              throw new Error('Cart is empty');
+            }
+
+            // Validate total amount
+            if (total <= 0) {
+              throw new Error('Invalid order total');
+            }
+
+            // Create PayPal order
+            const orderData = {
+              intent: 'CAPTURE',
+              purchase_units: [{
+                description: `Wool Witch Order - ${cartItems.length} item(s)`,
+                amount: {
+                  currency_code: config.currency,
+                  value: total.toFixed(2),
+                  breakdown: {
+                    item_total: {
+                      currency_code: config.currency,
+                      value: subtotal.toFixed(2)
+                    },
+                    shipping: {
+                      currency_code: config.currency,
+                      value: deliveryTotal.toFixed(2)
+                    }
+                  }
+                },
+                items: cartItems.map(item => ({
+                  name: item.product.name,
+                  description: item.product.description?.substring(0, 127) || 'Handmade crochet item',
+                  unit_amount: {
                     currency_code: config.currency,
-                    value: subtotal.toFixed(2)
+                    value: item.product.price.toFixed(2)
                   },
-                  shipping: {
-                    currency_code: config.currency,
-                    value: deliveryTotal.toFixed(2)
+                  quantity: item.quantity.toString(),
+                  category: 'PHYSICAL_GOODS'
+                })),
+                shipping: {
+                  address: {
+                    name: { full_name: customerInfo.fullName },
+                    address_line_1: customerInfo.address.address,
+                    admin_area_2: customerInfo.address.city,
+                    postal_code: customerInfo.address.postcode,
+                    country_code: 'GB'
                   }
                 }
-              },
-              items: cartItems.map(item => ({
-                name: item.product.name,
-                description: item.product.description?.substring(0, 100),
-                unit_amount: {
-                  currency_code: config.currency,
-                  value: item.product.price.toFixed(2)
-                },
-                quantity: item.quantity.toString(),
-                category: 'PHYSICAL_GOODS'
-              })),
-              shipping: {
-                address: {
-                  name: { full_name: customerInfo.fullName },
-                  address_line_1: customerInfo.address.address,
-                  admin_area_2: customerInfo.address.city,
-                  postal_code: customerInfo.address.postcode,
-                  country_code: 'GB'
-                }
+              }],
+              application_context: {
+                brand_name: 'Wool Witch',
+                landing_page: 'BILLING',
+                shipping_preference: 'SET_PROVIDED_ADDRESS',
+                user_action: 'PAY_NOW'
               }
-            }],
-            application_context: {
-              brand_name: 'Wool Witch',
-              landing_page: 'BILLING',
-              shipping_preference: 'SET_PROVIDED_ADDRESS',
-              user_action: 'PAY_NOW'
-            }
-          });
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to create PayPal order';
-          onError(errorMessage);
-          throw error;
+            };
+            
+            console.log('PayPal order data:', orderData);
+            const orderId = await actions.order.create(orderData);
+            console.log('PayPal order created:', orderId);
+            return orderId;
+          } catch (error) {
+            console.error('PayPal order creation error:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Failed to create PayPal order';
+            onError(errorMessage);
+            throw error;
+          }
+        },        onApprove: async (data: any, actions: any) => {
+          try {
+            console.log('PayPal payment approved:', data);
+            // Capture the payment
+            const captureResult = await actions.order.capture();
+            console.log('PayPal payment captured:', captureResult);
+            
+            // Extract payment details
+            const paymentDetails: PayPalDetails = {
+              paypal_order_id: data.orderID,
+              payer_id: data.payerID,
+              payer_email: captureResult.payer?.email_address,
+              transaction_id: captureResult.id,
+              capture_id: captureResult.purchase_units?.[0]?.payments?.captures?.[0]?.id,
+              gross_amount: total,
+              fee_amount: 0, // PayPal doesn't provide fee info in capture
+              net_amount: total
+            };
+
+            // Prepare success data
+            const paymentData: PayPalPaymentData = {
+              orderID: data.orderID,
+              payerID: data.payerID,
+              paymentID: captureResult.id,
+              details: paymentDetails,
+              captureResult
+            };
+
+            // Call success handler
+            await onSuccess(paymentData);
+            
+          } catch (error) {
+            console.error('PayPal payment processing error:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Payment processing failed';
+            onError(errorMessage);
+          }
+        },
+
+        onError: (error: any) => {
+          console.error('PayPal error:', error);
+          const friendlyMessage = typeof error === 'string' 
+            ? PayPalErrors.getErrorMessage(error)
+            : 'Payment could not be processed. Please try again.';
+          onError(friendlyMessage);
+        },
+
+        onCancel: (data: any) => {
+          console.log('PayPal payment cancelled:', data);
+          if (onCancel) {
+            onCancel();
+          }
         }
-      },
+        
+      });
 
-      onApprove: async (data: any, actions: any) => {
-        try {
-          // Capture the payment
-          const captureResult = await actions.order.capture();
-          
-          // Extract payment details
-          const paymentDetails: PayPalDetails = {
-            paypal_order_id: data.orderID,
-            payer_id: data.payerID,
-            payer_email: captureResult.payer?.email_address,
-            transaction_id: captureResult.id,
-            capture_id: captureResult.purchase_units?.[0]?.payments?.captures?.[0]?.id,
-            gross_amount: total,
-            fee_amount: 0, // PayPal doesn't provide fee info in capture
-            net_amount: total
-          };
+      // Render the button and track success
+      buttonsComponent.render(paypalRef.current).then(() => {
+        console.log('PayPal button rendered successfully');
+        setButtonRendered(true);
+      }).catch((renderError: any) => {
+        console.error('PayPal button render error:', renderError);
+        setError('Failed to render PayPal button');
+      });
 
-          // Prepare success data
-          const paymentData: PayPalPaymentData = {
-            orderID: data.orderID,
-            payerID: data.payerID,
-            paymentID: captureResult.id,
-            details: paymentDetails,
-            captureResult
-          };
-
-          // Call success handler
-          await onSuccess(paymentData);
-          
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Payment processing failed';
-          onError(errorMessage);
-        }
-      },
-
-      onError: (error: any) => {
-        console.error('PayPal error:', error);
-        const friendlyMessage = typeof error === 'string' 
-          ? PayPalErrors.getErrorMessage(error)
-          : 'Payment could not be processed. Please try again.';
-        onError(friendlyMessage);
-      },
-
-      onCancel: (data: any) => {
-        console.log('PayPal payment cancelled:', data);
-        if (onCancel) {
-          onCancel();
-        }
-      }
-      
-    }).render(paypalRef.current);
-  };
-
-  // Re-render button when dependencies change
+    } catch (error) {
+      console.error('PayPal button setup error:', error);
+      setError(error instanceof Error ? error.message : 'Failed to setup PayPal button');
+    }
+  };  // Re-render button when dependencies change
   useEffect(() => {
     if (isSDKLoaded && window.paypal) {
       renderPayPalButton(window.paypal);

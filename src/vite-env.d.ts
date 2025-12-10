@@ -8,7 +8,7 @@
 declare global {
   interface Window {
     paypal?: PayPalNamespace;
-    loadPayPalSDK?: () => Promise<PayPalNamespace>;
+    loadPayPalSDK?: (clientId: string) => Promise<PayPalNamespace>;
   }
 }
 

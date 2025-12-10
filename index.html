@@ -77,29 +77,42 @@
     <div id="root"></div>
     <!-- PayPal SDK - loaded dynamically based on environment -->
     <script>
-      // Load PayPal SDK dynamically to ensure proper configuration
-      window.loadPayPalSDK = function() {
+      // Load PayPal SDK dynamically with client ID provided by app
+      window.loadPayPalSDK = function(clientId) {
         return new Promise((resolve, reject) => {
           // Check if PayPal is already loaded
           if (window.paypal) {
+            console.log('PayPal SDK already loaded');
             resolve(window.paypal);
             return;
           }
 
-          // Get environment from meta tag or default to development
-          const isProduction = window.location.hostname !== 'localhost' && 
-                              window.location.hostname !== '127.0.0.1' &&
-                              !window.location.hostname.includes('.local');
+          if (!clientId || clientId === 'PRODUCTION_NOT_CONFIGURED') {
+            const error = new Error('PayPal client ID not configured for current environment');
+            console.error('PayPal configuration error:', error.message);
+            reject(error);
+            return;
+          }
           
-          // Basic fallback client ID for development (replace with real sandbox ID)
-          const clientId = isProduction 
-            ? 'PRODUCTION_CLIENT_ID' // Will be replaced in production build
-            : 'SANDBOX_CLIENT_ID';   // Will be replaced by app configuration
+          console.log('Loading PayPal SDK script with client ID:', clientId.substring(0, 10) + '...');
           
           const script = document.createElement('script');
           script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=GBP&intent=capture`;
-          script.onload = () => resolve(window.paypal);
-          script.onerror = reject;
+          script.onload = () => {
+            if (window.paypal) {
+              console.log('PayPal SDK script loaded successfully');
+              resolve(window.paypal);
+            } else {
+              const error = new Error('PayPal SDK failed to load');
+              console.error('PayPal SDK loading error:', error.message);
+              reject(error);
+            }
+          };
+          script.onerror = (e) => {
+            const error = new Error('Failed to load PayPal SDK script');
+            console.error('PayPal script loading error:', e, error.message);
+            reject(error);
+          };
           
           document.head.appendChild(script);
         });
