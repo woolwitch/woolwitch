@@ -1,17 +1,37 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { ProductCard } from '../components/ProductCard';
 import { supabase } from '../lib/supabase';
 import type { Product } from '../types/database';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Search, X } from 'lucide-react';
 
 export function Shop() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Focus search input when pressing '/' (like GitHub)
+      if (event.key === '/' && event.target !== document.querySelector('input[type="text"]')) {
+        event.preventDefault();
+        const searchInput = document.querySelector('input[type="text"]') as HTMLInputElement;
+        searchInput?.focus();
+      }
+      // Clear search when pressing Escape
+      if (event.key === 'Escape' && searchTerm) {
+        clearSearch();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [searchTerm]);
 
   async function fetchProducts() {
     try {
@@ -34,9 +54,26 @@ export function Shop() {
   }
 
   const categories = ['All', ...Array.from(new Set(products.map(p => p.category)))];
-  const filteredProducts = selectedCategory === 'All'
-    ? products
-    : products.filter(p => p.category === selectedCategory);
+  
+  // Filter products based on both category and search term
+  const filteredProducts = useMemo(() => {
+    return products.filter(product => {
+      const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
+      const matchesSearch = searchTerm === '' || 
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.category.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      return matchesCategory && matchesSearch;
+    });
+  }, [products, selectedCategory, searchTerm]);
+
+  const clearSearch = () => {
+    setSearchTerm('');
+    // Refocus on search input after clearing
+    const searchInput = document.querySelector('input[type="text"]') as HTMLInputElement;
+    searchInput?.focus();
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-rose-50 to-white">
@@ -57,6 +94,36 @@ export function Shop() {
       </section>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+        {/* Search Bar */}
+        <div className="max-w-md mx-auto mb-8">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search products... (Press / to focus)"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-rose-500 focus:border-transparent shadow-sm"
+            />
+            {searchTerm && (
+              <button
+                onClick={clearSearch}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              >
+                <X className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+              </button>
+            )}
+          </div>
+          {searchTerm && (
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found for "{searchTerm}"
+            </p>
+          )}
+        </div>
+
+        {/* Category Filters */}
         <div className="flex flex-wrap items-center justify-center gap-3 mb-12">
           {categories.map((category) => (
             <button
@@ -81,7 +148,17 @@ export function Shop() {
           </div>
         ) : filteredProducts.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-gray-600 text-lg">No products found in this category.</p>
+            <p className="text-gray-600 text-lg">
+              {searchTerm ? `No products found for "${searchTerm}".` : 'No products found in this category.'}
+            </p>
+            {searchTerm && (
+              <button
+                onClick={clearSearch}
+                className="mt-4 px-6 py-2 bg-rose-600 text-white rounded-full hover:bg-rose-700 transition-colors"
+              >
+                Clear search
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
