@@ -1,19 +1,23 @@
 [build]
   publish = "dist"
   command = "npm run build"
+  ignore = "git diff --quiet HEAD^ HEAD -- src/ package*.json"
+
+[build.environment]
+  NODE_VERSION = "20"
 
 [functions]
   directory = "netlify/functions"
+
+# Disable secrets scanning for Supabase public keys
+[build.processing.secrets]
+  ignored_env_vars = ["VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY"]
 
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
   force = false
-
-# Environment variables for build process
-[build.environment]
-  NODE_VERSION = "20"
 
 # Headers for better performance
 [[headers]]
@@ -26,5 +30,7 @@
   [headers.values]
     Cache-Control = "public, max-age=300"  # 5 minutes
     Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Headers = "Content-Type"
+    Access-Control-Allow-Methods = "GET, OPTIONS"
     Access-Control-Allow-Headers = "Content-Type"
     Access-Control-Allow-Methods = "GET, POST, OPTIONS"
