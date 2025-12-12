@@ -156,7 +156,7 @@ async function getCategories(): Promise<string[]> {
 /**
  * Netlify function handler
  */
-export async function handler(event: any) {
+exports.handler = async (event: any, context: any) => {
   // Handle CORS preflight requests
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -246,4 +246,4 @@ export async function handler(event: any) {
       }),
     };
   }
-}
+};
