@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
 import PaymentMethodSelector, { PaymentMethod } from '../components/PaymentMethodSelector';
 import PayPalButton, { PayPalPaymentData } from '../components/PayPalButton';
 import StripeCardPayment from '../components/StripeCardPayment';
@@ -35,6 +36,7 @@ interface PaymentState {
 
 export function Checkout({ onNavigate }: CheckoutProps) {
   const { items, subtotal, deliveryTotal, total, clearCart, cleanupCart } = useCart();
+  const { user } = useAuth();
   const [isCompleted, setIsCompleted] = useState(false);
   const [completedOrderData, setCompletedOrderData] = useState<{ total: number; email: string; paymentMethod: PaymentMethod } | null>(null);
   const [formData, setFormData] = useState<OrderDetails>({
@@ -49,6 +51,16 @@ export function Checkout({ onNavigate }: CheckoutProps) {
     isProcessing: false,
     error: null
   });
+
+  // Auto-populate email when user is logged in
+  useEffect(() => {
+    if (user?.email && !formData.email) {
+      setFormData(prev => ({
+        ...prev,
+        email: user.email!
+      }));
+    }
+  }, [user?.email, formData.email]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
