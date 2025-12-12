@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { validateCartProducts } from '../lib/cartDebug';
 import type { Product } from '../types/database';
 
 export interface CartItem {
@@ -12,6 +13,7 @@ interface CartContextType {
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
+  cleanupCart: () => Promise<number>; // Returns number of items removed
   subtotal: number;
   deliveryTotal: number;
   total: number;
@@ -27,17 +29,48 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   // Load cart from localStorage on mount
   useEffect(() => {
-    try {
-      const savedCart = localStorage.getItem('woolwitch-cart');
-      if (savedCart) {
-        const parsedCart = JSON.parse(savedCart);
-        setItems(Array.isArray(parsedCart) ? parsedCart : []);
+    const loadAndValidateCart = async () => {
+      try {
+        const savedCart = localStorage.getItem('woolwitch-cart');
+        if (savedCart) {
+          const parsedCart = JSON.parse(savedCart);
+          const cartItems = Array.isArray(parsedCart) ? parsedCart : [];
+          
+          if (cartItems.length > 0) {
+            // Validate cart products
+            const validation = await validateCartProducts(cartItems);
+            
+            if (!validation.valid) {
+              console.warn('🧹 Invalid products found in cart, cleaning up...', validation.errors);
+              
+              // Keep only valid items
+              const validItems = cartItems.filter(item => 
+                !validation.invalidItems.some(invalid => invalid.product.id === item.product.id)
+              );
+              
+              setItems(validItems);
+              
+              // Update localStorage with cleaned cart
+              localStorage.setItem('woolwitch-cart', JSON.stringify(validItems));
+              
+              if (validItems.length !== cartItems.length) {
+                console.info(`✅ Cleaned cart: removed ${cartItems.length - validItems.length} invalid items`);
+              }
+            } else {
+              setItems(cartItems);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading cart from localStorage:', error);
+        // Clear corrupted cart data
+        localStorage.removeItem('woolwitch-cart');
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error loading cart from localStorage:', error);
-    } finally {
-      setIsLoading(false);
-    }
+    };
+
+    loadAndValidateCart();
   }, []);
 
   // Save cart to localStorage whenever items change
@@ -91,6 +124,31 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const cleanupCart = async (): Promise<number> => {
+    try {
+      if (items.length === 0) return 0;
+      
+      const validation = await validateCartProducts(items);
+      
+      if (!validation.valid) {
+        const validItems = items.filter(item => 
+          !validation.invalidItems.some(invalid => invalid.product.id === item.product.id)
+        );
+        
+        const removedCount = items.length - validItems.length;
+        setItems(validItems);
+        
+        console.info(`🧹 Manual cleanup: removed ${removedCount} invalid items`);
+        return removedCount;
+      }
+      
+      return 0;
+    } catch (error) {
+      console.error('Error during cart cleanup:', error);
+      return 0;
+    }
+  };
+
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   const deliveryTotal = items.reduce((sum, item) => sum + ((item.product.delivery_charge ?? 0) * item.quantity), 0);
   const total = subtotal + deliveryTotal;
@@ -98,16 +156,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   return (
     <CartContext.Provider value={{ 
-      items, 
-      addItem, 
-      removeItem, 
-      updateQuantity, 
-      clearCart, 
-      subtotal, 
-      deliveryTotal, 
-      total, 
-      itemCount, 
-      isLoading 
+      items,
+      addItem,
+      removeItem,
+      updateQuantity,
+      clearCart,
+      cleanupCart,
+      subtotal,
+      deliveryTotal,
+      total,
+      itemCount,
+      isLoading
     }}>
       {children}
     </CartContext.Provider>

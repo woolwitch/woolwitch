@@ -1052,6 +1052,15 @@ export interface PayPalDetails {
   net_amount?: number;
 }
 
+// Stripe payment details structure
+export interface StripeDetails {
+  payment_intent_id: string;
+  payment_method_id?: string;
+  last_four?: string;
+  card_brand?: string;
+  client_secret?: string;
+}
+
 // Cart item interface (for order creation)
 export interface CartItem {
   product: Product;
@@ -1065,8 +1074,9 @@ export interface CreateOrderData {
   address: OrderAddress;
   cartItems: CartItem[];
   paymentMethod: 'card' | 'paypal';
-  paymentId?: string; // For PayPal orders
+  paymentId?: string; // For PayPal orders or Stripe payment intent ID
   paypalDetails?: PayPalDetails;
+  stripeDetails?: StripeDetails;
 }
 
 // Order summary for display

@@ -3,8 +3,9 @@ import { ArrowLeft } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import PaymentMethodSelector, { PaymentMethod } from '../components/PaymentMethodSelector';
 import PayPalButton, { PayPalPaymentData } from '../components/PayPalButton';
+import StripeCardPayment from '../components/StripeCardPayment';
 import { createOrder, validateOrderData } from '../lib/orderService';
-import type { OrderAddress, CreateOrderData } from '../types/database';
+import type { OrderAddress, CreateOrderData, StripeDetails } from '../types/database';
 
 interface CheckoutProps {
   onNavigate: (page: 'shop' | 'cart' | 'checkout') => void;
@@ -16,7 +17,14 @@ interface OrderDetails {
   address: string;
   city: string;
   postcode: string;
-  cardNumber: string;
+}
+
+interface StripePaymentData {
+  paymentIntentId: string;
+  paymentMethodId: string;
+  last4: string;
+  brand: string;
+  clientSecret: string;
 }
 
 interface PaymentState {
@@ -26,7 +34,7 @@ interface PaymentState {
 }
 
 export function Checkout({ onNavigate }: CheckoutProps) {
-  const { items, subtotal, deliveryTotal, total, clearCart } = useCart();
+  const { items, subtotal, deliveryTotal, total, clearCart, cleanupCart } = useCart();
   const [isCompleted, setIsCompleted] = useState(false);
   const [completedOrderData, setCompletedOrderData] = useState<{ total: number; email: string; paymentMethod: PaymentMethod } | null>(null);
   const [formData, setFormData] = useState<OrderDetails>({
@@ -35,7 +43,6 @@ export function Checkout({ onNavigate }: CheckoutProps) {
     address: '',
     city: '',
     postcode: '',
-    cardNumber: '',
   });
   const [paymentState, setPaymentState] = useState<PaymentState>({
     method: 'card',
@@ -58,17 +65,18 @@ export function Checkout({ onNavigate }: CheckoutProps) {
     postcode: formData.postcode
   });
 
-  // Card payment form submission handler  
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (paymentState.method !== 'card') return; // Only handle card payments here
-    
+  // Stripe payment success handler
+  const handleStripeSuccess = async (paymentData: StripePaymentData) => {
     try {
       setPaymentState(prev => ({ ...prev, isProcessing: true, error: null }));
-
-      // Mock card processing delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      
+      const stripeDetails: StripeDetails = {
+        payment_intent_id: paymentData.paymentIntentId,
+        payment_method_id: paymentData.paymentMethodId,
+        last_four: paymentData.last4,
+        card_brand: paymentData.brand,
+        client_secret: paymentData.clientSecret,
+      };
 
       const orderData: CreateOrderData = {
         email: formData.email,
@@ -76,7 +84,8 @@ export function Checkout({ onNavigate }: CheckoutProps) {
         address: getOrderAddress(),
         cartItems: items.map(item => ({ product: item.product, quantity: item.quantity })),
         paymentMethod: 'card',
-        paymentId: `card_${Date.now()}` // Mock card transaction ID
+        paymentId: paymentData.paymentIntentId,
+        stripeDetails
       };
 
       // Validate order data
@@ -102,6 +111,35 @@ export function Checkout({ onNavigate }: CheckoutProps) {
       setPaymentState(prev => ({ ...prev, error: errorMessage }));
     } finally {
       setPaymentState(prev => ({ ...prev, isProcessing: false }));
+    }
+  };
+
+  // Stripe payment error handler
+  const handleStripeError = (error: string) => {
+    setPaymentState(prev => ({ ...prev, error, isProcessing: false }));
+  };
+
+  // Handle cart cleanup for invalid products
+  const handleCartCleanup = async () => {
+    try {
+      const removedCount = await cleanupCart();
+      if (removedCount > 0) {
+        setPaymentState(prev => ({ 
+          ...prev, 
+          error: null 
+        }));
+        // Show success message or refresh the page
+        window.location.reload();
+      } else {
+        // If no items were removed, clear the entire cart
+        clearCart();
+        onNavigate('shop');
+      }
+    } catch (error) {
+      console.error('Error cleaning up cart:', error);
+      // Fallback: clear entire cart
+      clearCart();
+      onNavigate('shop');
     }
   };
 
@@ -209,7 +247,7 @@ export function Checkout({ onNavigate }: CheckoutProps) {
           <div className="lg:col-span-2">
             <h1 className="text-4xl font-serif font-bold text-gray-900 mb-8">Checkout</h1>
 
-            <form onSubmit={handleSubmit} className="space-y-8">
+            <div className="space-y-8">
               <div className="bg-white rounded-xl shadow-md p-6">
                 <h2 className="text-2xl font-semibold text-gray-900 mb-6">Shipping Information</h2>
 
@@ -300,37 +338,51 @@ export function Checkout({ onNavigate }: CheckoutProps) {
                       <span className="text-red-800 font-medium">Payment Error</span>
                     </div>
                     <p className="text-red-600 text-sm mt-1">{paymentState.error}</p>
+                    
+                    {/* Show cleanup button for cart-related errors */}
+                    {paymentState.error.includes('cart') && paymentState.error.includes('no longer available') && (
+                      <div className="mt-3 flex space-x-2">
+                        <button
+                          onClick={handleCartCleanup}
+                          className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md transition-colors"
+                        >
+                          Clean Up Cart
+                        </button>
+                        <button
+                          onClick={() => window.location.reload()}
+                          className="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-md transition-colors"
+                        >
+                          Refresh Page
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {/* Card Payment Form */}
                 {paymentState.method === 'card' && (
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-2">Card Number</label>
-                      <input
-                        type="text"
-                        name="cardNumber"
-                        value={formData.cardNumber}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/\s/g, '');
-                          if (value.length <= 16) {
-                            const formatted = value.replace(/(\d{4})/g, '$1 ').trim();
-                            setFormData((prev) => ({
-                              ...prev,
-                              cardNumber: formatted,
-                            }));
-                          }
+                    {/* Form validation check for Stripe */}
+                    {formData.email && formData.fullName && formData.address && formData.city && formData.postcode ? (
+                      <StripeCardPayment
+                        cartItems={items.map(item => ({ product: item.product, quantity: item.quantity }))}
+                        customerInfo={{
+                          email: formData.email,
+                          fullName: formData.fullName,
+                          address: getOrderAddress()
                         }}
-                        required
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-rose-600 font-mono"
-                        placeholder="1234 5678 9012 3456"
+                        onSuccess={handleStripeSuccess}
+                        onError={handleStripeError}
+                        disabled={paymentState.isProcessing}
+                        className="mt-4"
                       />
-                    </div>
-
-                    <p className="text-sm text-gray-600 mt-4">
-                      For testing, use card number: <span className="font-mono font-semibold">4242 4242 4242 4242</span>
-                    </p>
+                    ) : (
+                      <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p className="text-yellow-800 text-sm">
+                          Please fill in all shipping information above to enable card payment.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -366,17 +418,6 @@ export function Checkout({ onNavigate }: CheckoutProps) {
                 )}
               </div>
 
-              {/* Card Payment Submit Button */}
-              {paymentState.method === 'card' && (
-                <button
-                  type="submit"
-                  disabled={paymentState.isProcessing || paymentState.method !== 'card'}
-                  className="w-full bg-rose-600 hover:bg-rose-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-4 rounded-lg font-semibold transition-colors text-lg"
-                >
-                  {paymentState.isProcessing ? 'Processing...' : 'Complete Purchase'}
-                </button>
-              )}
-              
               {/* PayPal processing indicator */}
               {paymentState.method === 'paypal' && paymentState.isProcessing && (
                 <div className="w-full bg-blue-50 border border-blue-200 text-blue-800 py-4 rounded-lg font-semibold text-lg text-center">
@@ -386,7 +427,7 @@ export function Checkout({ onNavigate }: CheckoutProps) {
                   </div>
                 </div>
               )}
-            </form>
+            </div>
           </div>
 
           <div className="lg:col-span-1">

@@ -5,6 +5,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { supabase } from './supabase';
+import { validateCartProducts, logCartValidation } from './cartDebug';
 import type { 
   Order, 
   Payment, 
@@ -12,7 +13,8 @@ import type {
   OrderSummary, 
   CartItem,
   OrderAddress,
-  PayPalDetails
+  PayPalDetails,
+  StripeDetails
 } from '../types/database';
 
 // ========================================
@@ -71,7 +73,21 @@ export function validateCartTotals(
 // ========================================
 
 export async function createOrder(orderData: CreateOrderData): Promise<Order> {
-  const { cartItems, paymentMethod, paymentId, paypalDetails, ...customerInfo } = orderData;
+  const { cartItems, paymentMethod, paymentId, paypalDetails, stripeDetails, ...customerInfo } = orderData;
+
+  // Validate cart products before proceeding
+  await logCartValidation(cartItems);
+  const validation = await validateCartProducts(cartItems);
+  
+  if (!validation.valid) {
+    console.error('Invalid cart items detected:', validation.errors);
+    
+    // Instead of throwing an error, suggest automatic cleanup
+    throw new Error(
+      'Some products in your cart are no longer available and need to be removed. ' +
+      'Please clear your cart and re-add the items, or refresh the page to automatically clean up invalid items.'
+    );
+  }
 
   const subtotal = calculateSubtotal(cartItems);
   const deliveryTotal = calculateDeliveryTotal(cartItems);
@@ -108,7 +124,8 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
       delivery_charge: item.product.delivery_charge || 0
     }));
 
-    console.log('Creating order items:', JSON.stringify(orderItems, null, 2));
+    console.log('Creating order items for order:', (order as any).id);
+    console.log('Order items to insert:', JSON.stringify(orderItems, null, 2));
 
     const { error: itemsError } = await (supabase as any)
       .from('order_items')
@@ -116,8 +133,17 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
 
     if (itemsError) {
       console.error('Order items creation error:', itemsError);
+      console.error('Failed order items data:', JSON.stringify(orderItems, null, 2));
+      
+      // Clean up the order if items failed
       await (supabase as any).from('orders').delete().eq('id', (order as any).id);
-      throw new Error(`Failed to create order items: ${itemsError.message}`);
+      
+      // Provide more specific error message
+      const errorMsg = itemsError.message || 'Unknown error';
+      if (errorMsg.includes('foreign key constraint')) {
+        throw new Error('One or more products in your cart are no longer available. Please refresh the page and try again.');
+      }
+      throw new Error(`Failed to create order items: ${errorMsg}`);
     }
 
     if (paymentId) {
@@ -125,10 +151,11 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
         order_id: (order as any).id,
         payment_method: paymentMethod,
         payment_id: paymentId,
-        status: paymentMethod === 'paypal' ? 'completed' : 'pending',
+        status: paymentMethod === 'paypal' ? 'completed' : (paymentMethod === 'card' ? 'completed' : 'pending'),
         amount: total,
         currency: 'GBP',
-        paypal_details: paypalDetails || null
+        paypal_details: paypalDetails || null,
+        stripe_details: stripeDetails || null
       };
 
       const { error: paymentError } = await (supabase as any)
@@ -165,7 +192,8 @@ export async function createPaymentRecord(
   paymentId: string,
   amount: number,
   status: Payment['status'] = 'completed',
-  paypalDetails?: PayPalDetails
+  paypalDetails?: PayPalDetails,
+  stripeDetails?: StripeDetails
 ): Promise<void> {
   const paymentData = {
     order_id: orderId,
@@ -174,7 +202,8 @@ export async function createPaymentRecord(
     status,
     amount,
     currency: 'GBP',
-    paypal_details: paypalDetails || null
+    paypal_details: paypalDetails || null,
+    stripe_details: stripeDetails || null
   };
 
   const { error } = await (supabase as any)
