@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, Edit2, Trash2, Save, X, Upload, Package, ShoppingCart } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { dataService } from '../lib/dataService';
 import type { Product, Order } from '../types/database';
 import { useAuth } from '../contexts/AuthContext';
 import { getAllOrders, updateOrderStatus, getOrderStatistics, formatOrderStatus, getOrderStatusColor } from '../lib/orderService';
@@ -52,6 +53,8 @@ export function Admin() {
 
   async function fetchAllProducts() {
     try {
+      setLoading(true);
+      // For admin, we need full product data
       const { data, error } = await (supabase as any)
         .from('products')
         .select('*')
@@ -59,6 +62,9 @@ export function Admin() {
 
       if (error) throw error;
       setProducts((data as any) || []);
+      
+      // Clear cache since admin might have updated data
+      dataService.clearCache();
     } catch (error) {
       // Keep minimal error logging for debugging
     } finally {

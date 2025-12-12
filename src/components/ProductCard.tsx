@@ -1,6 +1,7 @@
 import { ShoppingCart } from 'lucide-react';
 import { useState } from 'react';
 import { useCart } from '../contexts/CartContext';
+import { OptimizedImage } from './OptimizedImage';
 import type { Product } from '../types/database';
 
 interface ProductCardProps {
@@ -20,10 +21,11 @@ export function ProductCard({ product }: ProductCardProps) {
   return (
     <div className="group bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
       <div className="relative aspect-square overflow-hidden bg-gray-100">
-        <img
+        <OptimizedImage
           src={product.image_url}
           alt={product.name}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+          className="group-hover:scale-110 transition-transform duration-300"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
         {product.stock_quantity != null && product.stock_quantity < 5 && product.stock_quantity > 0 && (
           <div className="absolute top-3 right-3 bg-amber-500 text-white px-3 py-1 rounded-full text-xs font-semibold">

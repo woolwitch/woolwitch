@@ -1,18 +1,57 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { ProductCard } from '../components/ProductCard';
-import { supabase } from '../lib/supabase';
+import { dataService } from '../lib/dataService';
 import type { Product } from '../types/database';
 import { Sparkles, Search, X } from 'lucide-react';
 
 export function Shop() {
+  // Use Product interface from database types, but in practice we'll get optimized subset
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [categories, setCategories] = useState<string[]>(['All']);
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, []);
+
+  // Refetch when category or search changes (with debounce)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchProducts();
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [selectedCategory, searchTerm]);
+
+  async function fetchCategories() {
+    try {
+      const categoryList = await dataService.getCategories();
+      setCategories(['All', ...categoryList]);
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+    }
+  }
+
+  async function fetchProducts() {
+    try {
+      setLoading(true);
+      const productList = await dataService.getProductList({
+        category: selectedCategory !== 'All' ? selectedCategory : undefined,
+        search: searchTerm || undefined,
+        limit: 50
+      });
+      
+      // Cast to Product[] for component compatibility (fields are subset but sufficient)
+      setProducts(productList as Product[]);
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -32,41 +71,9 @@ export function Shop() {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [searchTerm]);
-
-  async function fetchProducts() {
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('is_available', true)
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error('Error fetching products:', error);
-        throw error;
-      }
-      setProducts((data as Product[]) || []);
-    } catch (error) {
-      console.error('Failed to fetch products:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const categories = ['All', ...Array.from(new Set(products.map(p => p.category)))];
   
-  // Filter products based on both category and search term
-  const filteredProducts = useMemo(() => {
-    return products.filter(product => {
-      const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
-      const matchesSearch = searchTerm === '' || 
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.category.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      return matchesCategory && matchesSearch;
-    });
-  }, [products, selectedCategory, searchTerm]);
+  // Filter products based on both category and search term (now handled server-side)
+  const filteredProducts = products;
 
   const clearSearch = () => {
     setSearchTerm('');
