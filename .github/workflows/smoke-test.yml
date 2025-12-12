@@ -2,8 +2,11 @@ name: Smoke Test
 
 on:
   schedule:
-    # Run every hour at minute 0
-    - cron: '0 * * * *'
+    # Run at 08:00, 12:00, 16:00, and 20:00 UTC
+    - cron: '0 8 * * *'   # 08:00 UTC
+    - cron: '0 12 * * *'  # 12:00 UTC  
+    - cron: '0 16 * * *'  # 16:00 UTC
+    - cron: '0 20 * * *'  # 20:00 UTC
   workflow_dispatch:
     # Allow manual triggering
   workflow_run:
