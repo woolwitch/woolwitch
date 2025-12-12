@@ -54,6 +54,7 @@ cd wool-witch && npm start
 
 - **Frontend**: React 18, TypeScript, Tailwind CSS
 - **Backend**: Supabase (PostgreSQL, Auth, Real-time)
+- **Performance**: Netlify Functions for serverless product caching
 - **Build Tool**: Vite
 - **Package Manager**: npm
 - **Task Runner**: [Task](https://taskfile.dev/)
@@ -72,6 +73,7 @@ cd wool-witch && npm start
 - **[Payment Processing](docs/payments.md)** - Payment methods, testing, and deployment
 - **[Authentication Setup](docs/AUTHENTICATION_SETUP.md)** - Testing auth features
 - **[Product Image Management](docs/PRODUCT_IMAGE_MANAGEMENT.md)** - Managing product images and Supabase storage
+- **[Netlify Functions](netlify/README.md)** - Serverless caching and performance optimization
 - **[Database Schema](docs/)** - Database structure and migrations
 - **Deployment Guide** - Production deployment *Coming Soon*
 

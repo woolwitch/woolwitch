@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { persistentCache, imagePreloader, networkOptimizer } from './cacheUtils';
+import { netlifyFunctionClient, NetlifyFunctionClient } from './netlifyFunctionClient';
 import type { Product } from '../types/database';
 
 interface ProductListFields {
@@ -115,6 +116,31 @@ export class DataService {
       return cached;
     }
 
+    // Try Netlify function cache in production
+    if (NetlifyFunctionClient.shouldUseNetlifyCache()) {
+      try {
+        const products = await netlifyFunctionClient.getProducts({
+          category,
+          search,
+          limit,
+          offset
+        });
+        
+        // Store in local cache too
+        this.setCache(cacheKey, products, this.LIST_TTL);
+        
+        // Preload product images for better performance
+        if (products.length > 0) {
+          imagePreloader.preloadProductImages(products);
+        }
+        
+        return products;
+      } catch (error) {
+        console.warn('Netlify function cache failed, falling back to direct Supabase:', error);
+        // Fall through to direct Supabase query
+      }
+    }
+
     try {
       let query = supabase
         .from('products')
@@ -221,6 +247,20 @@ export class DataService {
     const cached = this.getFromCache<string[]>(cacheKey);
     if (cached) {
       return cached;
+    }
+
+    // Try Netlify function cache in production
+    if (NetlifyFunctionClient.shouldUseNetlifyCache()) {
+      try {
+        const categories = await netlifyFunctionClient.getCategories();
+        
+        // Store in local cache too
+        this.setCache(cacheKey, categories, 15 * 60 * 1000); // 15 minutes TTL
+        return categories;
+      } catch (error) {
+        console.warn('Netlify function cache failed for categories, falling back to direct Supabase:', error);
+        // Fall through to direct Supabase query
+      }
     }
 
     try {
