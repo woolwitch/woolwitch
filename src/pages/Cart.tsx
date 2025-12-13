@@ -1,8 +1,9 @@
 import { Trash2, Plus, Minus, ArrowLeft } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
+import type { CartPageType } from '../types/navigation';
 
 interface CartProps {
-  onNavigate: (page: 'shop' | 'cart' | 'checkout') => void;
+  onNavigate: (page: CartPageType) => void;
 }
 
 export function Cart({ onNavigate }: CartProps) {

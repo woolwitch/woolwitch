@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plus, Edit2, Trash2, Save, X, Upload, Package, ShoppingCart } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { dataService } from '../lib/dataService';
+import { STORAGE, VALIDATION } from '../constants';
 import type { Product, Order } from '../types/database';
 import { useAuth } from '../contexts/AuthContext';
 import { getAllOrders, updateOrderStatus, getOrderStatistics, formatOrderStatus, getOrderStatusColor } from '../lib/orderService';
@@ -140,14 +141,14 @@ export function Admin() {
     const file = e.target.files?.[0];
     if (file) {
       // Validate file type
-      const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+      const validTypes: readonly string[] = VALIDATION.ALLOWED_IMAGE_TYPES;
       if (!validTypes.includes(file.type)) {
         alert('Please select a valid image file (JPEG, PNG, WebP, or GIF)');
         return;
       }
 
       // Validate file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
+      if (file.size > STORAGE.MAX_IMAGE_SIZE) {
         alert('Image size must be less than 5MB');
         return;
       }
@@ -459,7 +460,7 @@ export function Admin() {
                   <label className="flex items-center justify-center w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-rose-500 transition-colors">
                     <input
                       type="file"
-                      accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                      accept={VALIDATION.ALLOWED_IMAGE_ACCEPT}
                       onChange={handleImageChange}
                       className="hidden"
                     />

@@ -10,16 +10,17 @@ import { Contact } from './pages/Contact';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { TermsOfService } from './pages/TermsOfService';
 import Orders from './pages/Orders';
+import type { PageType, CartPageType } from './types/navigation';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact' | 'privacy-policy' | 'terms-of-service' | 'orders'>('shop');
+  const [currentPage, setCurrentPage] = useState<PageType>('shop');
 
   const renderPage = () => {
-    const handleCartNavigation = (page: 'shop' | 'cart' | 'checkout') => {
+    const handleCartNavigation = (page: CartPageType) => {
       setCurrentPage(page);
     };
 
-    const handleCheckoutNavigation = (page: 'shop' | 'cart' | 'checkout') => {
+    const handleCheckoutNavigation = (page: CartPageType) => {
       setCurrentPage(page);
     };
 

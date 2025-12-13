@@ -1,7 +1,8 @@
 import { ArrowLeft } from 'lucide-react';
+import type { PolicyPageType } from '../types/navigation';
 
 interface TermsOfServiceProps {
-  onNavigate?: (page: 'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact' | 'privacy-policy' | 'terms-of-service') => void;
+  onNavigate?: (page: PolicyPageType) => void;
 }
 
 export function TermsOfService({ onNavigate }: TermsOfServiceProps = {}) {

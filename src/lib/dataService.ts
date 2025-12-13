@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { persistentCache, imagePreloader, networkOptimizer } from './cacheUtils';
 import { netlifyFunctionClient, NetlifyFunctionClient } from './netlifyFunctionClient';
+import { CACHE } from '../constants';
 import type { Product } from '../types/database';
 
 interface ProductListFields {
@@ -37,9 +38,9 @@ interface CacheEntry<T> {
  */
 export class DataService {
   private cache = new Map<string, CacheEntry<unknown>>();
-  private readonly DEFAULT_TTL = 30 * 60 * 1000; // 30 minutes for most data
-  private readonly LIST_TTL = 15 * 60 * 1000; // 15 minutes for product lists
-  private readonly CATEGORY_TTL = 60 * 60 * 1000; // 1 hour for categories (rarely change)
+  private readonly DEFAULT_TTL = CACHE.DEFAULT_TTL;
+  private readonly LIST_TTL = CACHE.LIST_TTL;
+  private readonly CATEGORY_TTL = CACHE.CATEGORY_TTL;
   private pendingFetches = new Map<string, Promise<unknown>>(); // Dedupe concurrent requests
 
   /**

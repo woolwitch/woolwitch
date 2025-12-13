@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { validateCartProducts } from '../lib/cartDebug';
+import { STORAGE } from '../constants';
 import type { Product } from '../types/database';
 import type { CartItem } from '../types/cart';
 
@@ -27,7 +28,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const loadAndValidateCart = async () => {
       try {
-        const savedCart = localStorage.getItem('woolwitch-cart');
+        const savedCart = localStorage.getItem(STORAGE.CART_KEY);
         if (savedCart) {
           const parsedCart = JSON.parse(savedCart);
           const cartItems = Array.isArray(parsedCart) ? parsedCart : [];
@@ -47,7 +48,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
               setItems(validItems);
               
               // Update localStorage with cleaned cart
-              localStorage.setItem('woolwitch-cart', JSON.stringify(validItems));
+              localStorage.setItem(STORAGE.CART_KEY, JSON.stringify(validItems));
               
               if (validItems.length !== cartItems.length) {
                 console.info(`✅ Cleaned cart: removed ${cartItems.length - validItems.length} invalid items`);
@@ -60,7 +61,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         console.error('Error loading cart from localStorage:', error);
         // Clear corrupted cart data
-        localStorage.removeItem('woolwitch-cart');
+        localStorage.removeItem(STORAGE.CART_KEY);
       } finally {
         setIsLoading(false);
       }
@@ -73,7 +74,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isLoading) {
       try {
-        localStorage.setItem('woolwitch-cart', JSON.stringify(items));
+        localStorage.setItem(STORAGE.CART_KEY, JSON.stringify(items));
       } catch (error) {
         console.error('Error saving cart to localStorage:', error);
       }
@@ -114,7 +115,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems([]);
     // Also clear from localStorage immediately
     try {
-      localStorage.removeItem('woolwitch-cart');
+      localStorage.removeItem(STORAGE.CART_KEY);
     } catch (error) {
       console.error('Error clearing cart from localStorage:', error);
     }

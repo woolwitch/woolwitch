@@ -3,6 +3,8 @@
  * Reduces egress by implementing smart caching strategies
  */
 
+import { CACHE, STORAGE } from '../constants';
+
 interface CacheItem<T> {
   data: T;
   timestamp: number;
@@ -20,13 +22,17 @@ interface ImagePreloadOptions {
  * Enhanced localStorage cache with TTL and versioning
  */
 export class PersistentCache {
-  private prefix = 'woolwitch_cache_';
-  private version = '1.0';
+  private prefix = STORAGE.CACHE_PREFIX;
+  private version = STORAGE.CACHE_VERSION;
 
   /**
    * Set cache item with TTL
+   * @param key - Cache key (will be prefixed with cache prefix)
+   * @param data - Data to cache (will be JSON serialized)
+   * @param ttl - Time to live in milliseconds
+   * @returns True if cache was set successfully
    */
-  set<T>(key: string, data: T, ttl: number = 5 * 60 * 1000): boolean {
+  set<T>(key: string, data: T, ttl: number = CACHE.SHORT_TTL): boolean {
     try {
       const item: CacheItem<T> = {
         data,
@@ -47,6 +53,8 @@ export class PersistentCache {
 
   /**
    * Get cache item if valid
+   * @param key - Cache key
+   * @returns The cached data or null if expired/not found
    */
   get<T>(key: string): T | null {
     try {

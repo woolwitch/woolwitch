@@ -21,12 +21,22 @@ import type {
 // ORDER CALCULATION UTILITIES
 // ========================================
 
+/**
+ * Calculates the subtotal for cart items (product prices only, no delivery)
+ * @param cartItems - Array of cart items with product and quantity
+ * @returns The subtotal amount in GBP
+ */
 export function calculateSubtotal(cartItems: CartItem[]): number {
   return cartItems.reduce((total, item) => {
     return total + (item.product.price * item.quantity);
   }, 0);
 }
 
+/**
+ * Calculates the total delivery charges for all cart items
+ * @param cartItems - Array of cart items with product and quantity
+ * @returns The total delivery charge in GBP
+ */
 export function calculateDeliveryTotal(cartItems: CartItem[]): number {
   return cartItems.reduce((total, item) => {
     const deliveryCharge = item.product.delivery_charge || 0;
@@ -34,10 +44,20 @@ export function calculateDeliveryTotal(cartItems: CartItem[]): number {
   }, 0);
 }
 
+/**
+ * Calculates the grand total including subtotal and delivery
+ * @param cartItems - Array of cart items with product and quantity
+ * @returns The total amount in GBP
+ */
 export function calculateTotal(cartItems: CartItem[]): number {
   return calculateSubtotal(cartItems) + calculateDeliveryTotal(cartItems);
 }
 
+/**
+ * Gets a complete order summary with all calculated values
+ * @param cartItems - Array of cart items with product and quantity
+ * @returns OrderSummary object with subtotal, delivery, total, and item count
+ */
 export function getOrderSummary(cartItems: CartItem[]): OrderSummary {
   const subtotal = calculateSubtotal(cartItems);
   const deliveryTotal = calculateDeliveryTotal(cartItems);
@@ -51,6 +71,14 @@ export function getOrderSummary(cartItems: CartItem[]): OrderSummary {
   };
 }
 
+/**
+ * Validates that calculated cart totals match expected values
+ * @param cartItems - Array of cart items to validate
+ * @param expectedSubtotal - Expected subtotal value
+ * @param expectedDelivery - Expected delivery charge
+ * @param expectedTotal - Expected total value
+ * @returns True if all values match within 0.01 tolerance
+ */
 export function validateCartTotals(
   cartItems: CartItem[],
   expectedSubtotal: number,
@@ -72,6 +100,12 @@ export function validateCartTotals(
 // ORDER CREATION SERVICES
 // ========================================
 
+/**
+ * Creates a new order in the database with all associated items and payment info
+ * @param orderData - Complete order data including customer info, cart items, and payment details
+ * @returns The created Order object
+ * @throws Error if cart validation fails or order creation fails
+ */
 export async function createOrder(orderData: CreateOrderData): Promise<Order> {
   const { cartItems, paymentMethod, paymentId, paypalDetails, stripeDetails, ...customerInfo } = orderData;
 
@@ -177,6 +211,9 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
 
 /**
  * Get order items for a specific order
+ * @param orderId - The UUID of the order
+ * @returns Array of order items
+ * @throws Error if fetching fails
  */
 export async function getOrderItems(orderId: string): Promise<any[]> {
   try {
@@ -198,6 +235,12 @@ export async function getOrderItems(orderId: string): Promise<any[]> {
   }
 }
 
+/**
+ * Updates the status of an existing order
+ * @param orderId - The UUID of the order to update
+ * @param status - The new status value
+ * @throws Error if update fails
+ */
 export async function updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
   const { error } = await (supabase as any)
     .from('orders')
@@ -209,6 +252,17 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
   }
 }
 
+/**
+ * Creates a payment record associated with an order
+ * @param orderId - The UUID of the order
+ * @param paymentMethod - Payment method used ('card' or 'paypal')
+ * @param paymentId - External payment provider ID
+ * @param amount - Payment amount in GBP
+ * @param status - Payment status (default: 'completed')
+ * @param paypalDetails - Optional PayPal-specific details
+ * @param stripeDetails - Optional Stripe-specific details
+ * @throws Error if creation fails
+ */
 export async function createPaymentRecord(
   orderId: string, 
   paymentMethod: 'card' | 'paypal',
@@ -242,6 +296,12 @@ export async function createPaymentRecord(
 // ORDER RETRIEVAL SERVICES
 // ========================================
 
+/**
+ * Retrieves orders for the current authenticated user
+ * @param limit - Maximum number of orders to retrieve (default: 50)
+ * @returns Array of user orders sorted by creation date (newest first)
+ * @throws Error if fetching fails
+ */
 export async function getUserOrders(limit: number = 50): Promise<Order[]> {
   const { data: orders, error: ordersError } = await (supabase as any)
     .from('orders')
@@ -256,6 +316,12 @@ export async function getUserOrders(limit: number = 50): Promise<Order[]> {
   return (orders as any[]) || [];
 }
 
+/**
+ * Retrieves a single order by ID
+ * @param orderId - The UUID of the order
+ * @returns The order object or null if not found
+ * @throws Error if fetching fails (except for not found)
+ */
 export async function getOrderById(orderId: string): Promise<Order | null> {
   const { data: order, error } = await (supabase as any)
     .from('orders')
@@ -273,6 +339,12 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
   return order as any;
 }
 
+/**
+ * Retrieves all orders with optional filtering (admin function)
+ * @param options - Filter options for status, payment method, and pagination
+ * @returns Array of orders matching the criteria
+ * @throws Error if fetching fails
+ */
 export async function getAllOrders(options: {
   status?: string;
   paymentMethod?: string;

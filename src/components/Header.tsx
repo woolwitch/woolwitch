@@ -3,11 +3,13 @@ import { ShoppingBag, User, LogOut, UserCog, Menu, X } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { AuthModal } from './AuthModal';
+import { handleError } from '../lib/errorHandling';
 import woolwitchLogo from '../assets/woolwitch.jpg';
+import type { PageType } from '../types/navigation';
 
 interface HeaderProps {
-  currentPage: 'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact' | 'privacy-policy' | 'terms-of-service' | 'orders';
-  onNavigate: (page: 'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact' | 'privacy-policy' | 'terms-of-service' | 'orders') => void;
+  currentPage: PageType;
+  onNavigate: (page: PageType) => void;
 }
 
 export function Header({ currentPage, onNavigate }: HeaderProps) {
@@ -21,12 +23,12 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
       await signOut();
       onNavigate('shop');
       setMobileMenuOpen(false);
-    } catch {
-      // Keep minimal error logging for debugging
+    } catch (error) {
+      handleError(error, 'Header.handleSignOut');
     }
   };
 
-  const handleNavigation = (page: 'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact' | 'privacy-policy' | 'terms-of-service' | 'orders') => {
+  const handleNavigation = (page: PageType) => {
     onNavigate(page);
     setMobileMenuOpen(false);
   };

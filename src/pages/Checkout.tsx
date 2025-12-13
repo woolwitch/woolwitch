@@ -7,9 +7,10 @@ import PayPalButton, { PayPalPaymentData } from '../components/PayPalButton';
 import StripeCardPayment from '../components/StripeCardPayment';
 import { createOrder, validateOrderData } from '../lib/orderService';
 import type { OrderAddress, CreateOrderData, StripeDetails } from '../types/database';
+import type { CartPageType } from '../types/navigation';
 
 interface CheckoutProps {
-  onNavigate: (page: 'shop' | 'cart' | 'checkout') => void;
+  onNavigate: (page: CartPageType) => void;
 }
 
 interface OrderDetails {
