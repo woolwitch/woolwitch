@@ -62,6 +62,7 @@ jobs:
         enable-pull-request-comment: false
         enable-commit-comment: false
         overwrites-pull-request-comment: false
+        enable-github-deployment: false
         fails-without-credentials: true
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
