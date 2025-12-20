@@ -1,6 +1,6 @@
 /**
  * Image compression utility
- * Compresses images to under 500KB while maintaining reasonable quality
+ * Compresses images to under 50KB while maintaining reasonable quality
  */
 
 const MAX_SIZE_KB = 50;
