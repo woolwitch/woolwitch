@@ -45,11 +45,14 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     setGoogleLoading(true);
 
     try {
+      console.log('Starting Google sign-in...');
       await signInWithGoogle();
+      console.log('Google sign-in completed successfully');
       onClose();
       setEmail('');
       setPassword('');
     } catch (err) {
+      console.error('Google sign-in error in modal:', err);
       setError(err instanceof Error ? err.message : 'Google sign-in failed');
     } finally {
       setGoogleLoading(false);
