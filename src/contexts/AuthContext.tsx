@@ -57,16 +57,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
+      // maybeSingle() returns null data when no row is found (not an error)
+      // Only log actual database errors
       if (error) {
-        throw error;
+        console.error('Error checking admin status:', error);
+        setIsAdmin(false);
+        return;
       }
       
-      const isAdminUser = (data as any)?.role === 'admin';
+      const isAdminUser = data?.role === 'admin';
       setIsAdmin(isAdminUser);
     } catch (error) {
-      // Keep minimal error logging for debugging
+      // Catch any unexpected errors (e.g., network issues, runtime exceptions)
+      console.error('Unexpected error checking admin status:', error);
       setIsAdmin(false);
     } finally {
       setLoading(false);
