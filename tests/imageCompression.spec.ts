@@ -38,7 +38,6 @@ test.describe('Image Compression Utility', () => {
       const file = new File([blob], 'small-test.jpg', { type: 'image/jpeg' });
       const originalSize = file.size;
       
-      // @ts-expect-error - window.compressImage is injected
       const compressed = await window.compressImage(file);
       
       return {
@@ -85,7 +84,6 @@ test.describe('Image Compression Utility', () => {
       const file = new File([blob], 'large-test.jpg', { type: 'image/jpeg' });
       const originalSize = file.size;
       
-      // @ts-expect-error - window.compressImage is injected
       const compressed = await window.compressImage(file);
       
       return {
@@ -124,7 +122,6 @@ test.describe('Image Compression Utility', () => {
       
       const file = new File([blob], 'quality-test.jpg', { type: 'image/jpeg' });
       
-      // @ts-expect-error - window.compressImage is injected
       const compressed = await window.compressImage(file);
       
       // Verify it was compressed to JPEG format
@@ -164,7 +161,6 @@ test.describe('Image Compression Utility', () => {
       
       const file = new File([blob], 'huge-test.jpg', { type: 'image/jpeg' });
       
-      // @ts-expect-error - window.compressImage is injected
       const compressed = await window.compressImage(file);
       
       // Load compressed image to check dimensions
@@ -223,7 +219,6 @@ test.describe('Image Compression Utility', () => {
       const file = new File([blob], 'extreme-test.jpg', { type: 'image/jpeg' });
       const startTime = Date.now();
       
-      // @ts-expect-error - window.compressImage is injected
       const compressed = await window.compressImage(file);
       
       const endTime = Date.now();
@@ -246,7 +241,6 @@ test.describe('Image Compression Utility', () => {
 
   test('formatFileSize utility works correctly', async ({ page }) => {
     const result = await page.evaluate(async () => {
-      // @ts-expect-error - window.formatFileSize is injected
       return {
         bytes: window.formatFileSize(512),
         kilobytes: window.formatFileSize(50 * 1024),
@@ -267,7 +261,6 @@ test.describe('Image Compression Utility', () => {
       const blob = new Blob([largeInvalidData], { type: 'image/jpeg' });
       const file = new File([blob], 'invalid.jpg', { type: 'image/jpeg' });
       
-      // @ts-expect-error - window.compressImage is injected
       try {
         await window.compressImage(file);
         return { error: null };
@@ -299,7 +292,6 @@ test.describe('Image Compression Utility', () => {
       const originalName = 'my-product-image.jpg';
       const file = new File([blob], originalName, { type: 'image/jpeg' });
       
-      // @ts-expect-error - window.compressImage is injected
       const compressed = await window.compressImage(file);
       
       return {

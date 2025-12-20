@@ -64,7 +64,7 @@ function compressWithQuality(
       
       // If still too large and quality can be reduced, try again
       if (blob.size > MAX_SIZE_BYTES && quality > 0.1) {
-        compressWithQuality(canvas, fileName, quality - 0.1, resolve, reject);
+        compressWithQuality(canvas, fileName, Math.max(0.1, quality - 0.1), resolve, reject);
         return;
       }
       
