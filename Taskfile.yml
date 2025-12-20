@@ -51,7 +51,7 @@ tasks:
 
   dev:
     desc: Start development environment (database + dev server)
-    deps: [install, db:start]
+    deps: [install, setup-env, db:start]
     cmds:
       - echo "Starting development server..."
       - echo ""
