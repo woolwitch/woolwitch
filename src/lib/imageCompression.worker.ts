@@ -90,9 +90,8 @@ async function compressWithQuality(
       throw new Error('Failed to get temp canvas context');
     }
 
-    // Create an ImageBitmap from the current canvas
-    const imageBitmap = await canvas.convertToBlob();
-    const img = await createImageBitmap(imageBitmap);
+    // Create an ImageBitmap directly from the current canvas
+    const img = await createImageBitmap(canvas, 0, 0, canvas.width, canvas.height);
     
     // Draw resized image
     tempCtx.drawImage(img, 0, 0, newWidth, newHeight);

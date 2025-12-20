@@ -30,12 +30,12 @@ export async function compressImage(
     } catch (error) {
       console.warn('Web Worker compression failed, falling back to main thread:', error);
       // Fall back to main thread compression
-      return await compressOnMainThread(file);
+      return await compressOnMainThread(file, onProgress);
     }
   }
 
   // Fall back to main thread compression
-  return await compressOnMainThread(file);
+  return await compressOnMainThread(file, onProgress);
 }
 
 /**
@@ -125,7 +125,10 @@ async function compressWithWorker(
 /**
  * Compress image on main thread (fallback)
  */
-async function compressOnMainThread(file: File): Promise<File> {
+async function compressOnMainThread(
+  file: File,
+  onProgress?: CompressionProgressCallback
+): Promise<File> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -152,7 +155,7 @@ async function compressOnMainThread(file: File): Promise<File> {
         ctx.drawImage(img, 0, 0, width, height);
 
         // Try different quality levels until we get under the size limit
-        compressWithQuality(canvas, file.name, 0.9, resolve, reject);
+        compressWithQuality(canvas, file.name, 0.9, resolve, reject, onProgress);
       };
 
       img.onerror = () => reject(new Error('Failed to load image'));
@@ -165,8 +168,17 @@ function compressWithQuality(
   fileName: string,
   quality: number,
   resolve: (file: File) => void,
-  reject: (error: Error) => void
+  reject: (error: Error) => void,
+  onProgress?: CompressionProgressCallback,
+  iteration: number = 0
 ) {
+  const maxIterations = 10;
+  
+  // Report progress
+  if (onProgress) {
+    onProgress(Math.min((iteration / maxIterations) * 100, 90));
+  }
+
   canvas.toBlob(
     (blob) => {
       if (!blob) {
@@ -175,13 +187,13 @@ function compressWithQuality(
       }
 
       // If still too large and quality can be reduced, try again
-      if (blob.size > MAX_SIZE_BYTES && quality > 0.1) {
-        compressWithQuality(canvas, fileName, quality - 0.1, resolve, reject);
+      if (blob.size > MAX_SIZE_BYTES && quality > 0.1 && iteration < maxIterations) {
+        compressWithQuality(canvas, fileName, quality - 0.1, resolve, reject, onProgress, iteration + 1);
         return;
       }
 
       // If we've reduced quality to minimum and still too large, resize dimensions
-      if (blob.size > MAX_SIZE_BYTES) {
+      if (blob.size > MAX_SIZE_BYTES && iteration < maxIterations) {
         const ctx = canvas.getContext('2d');
         if (!ctx) {
           reject(new Error('Failed to get canvas context'));
@@ -210,8 +222,13 @@ function compressWithQuality(
         ctx.drawImage(tempCanvas, 0, 0);
 
         // Try compression again with reset quality
-        compressWithQuality(canvas, fileName, 0.9, resolve, reject);
+        compressWithQuality(canvas, fileName, 0.9, resolve, reject, onProgress, iteration + 1);
         return;
+      }
+
+      // Final progress
+      if (onProgress) {
+        onProgress(100);
       }
 
       // Success! Convert blob to File
