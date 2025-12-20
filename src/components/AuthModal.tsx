@@ -45,9 +45,13 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     setGoogleLoading(true);
 
     try {
-      console.log('Starting Google sign-in...');
+      if (import.meta.env.DEV) {
+        console.log('Starting Google sign-in...');
+      }
       await signInWithGoogle();
-      console.log('Google sign-in completed successfully');
+      if (import.meta.env.DEV) {
+        console.log('Google sign-in completed successfully');
+      }
       onClose();
       setEmail('');
       setPassword('');
