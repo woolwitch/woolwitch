@@ -10,6 +10,8 @@ interface CompressionMessage {
   type: 'compress';
   imageData: ImageData;
   fileName: string;
+  fileType: string;
+  outputFormat: { mimeType: string; extension: string };
   width: number;
   height: number;
 }
@@ -32,7 +34,7 @@ self.onmessage = async (e: MessageEvent<CompressionMessage>) => {
     return;
   }
 
-  const { imageData, fileName, width, height } = e.data;
+  const { imageData, fileName, outputFormat, width, height } = e.data;
 
   try {
     // Create OffscreenCanvas for compression
@@ -46,8 +48,8 @@ self.onmessage = async (e: MessageEvent<CompressionMessage>) => {
     // Draw image data to canvas
     ctx.putImageData(imageData, 0, 0);
 
-    // Compress with quality adjustment
-    const result = await compressWithQuality(canvas, fileName, 0.9);
+    // Compress with quality adjustment using the determined format
+    const result = await compressWithQuality(canvas, fileName, outputFormat, 0.9);
     
     self.postMessage({
       type: 'success',
@@ -65,6 +67,7 @@ self.onmessage = async (e: MessageEvent<CompressionMessage>) => {
 async function compressWithQuality(
   canvas: OffscreenCanvas,
   fileName: string,
+  outputFormat: { mimeType: string; extension: string },
   quality: number,
   iteration: number = 0
 ): Promise<{ blob: Blob; fileName: string }> {
@@ -77,13 +80,15 @@ async function compressWithQuality(
   } as CompressionResult);
 
   const blob = await canvas.convertToBlob({
-    type: 'image/jpeg',
+    type: outputFormat.mimeType,
     quality,
   });
 
   // If still too large and quality can be reduced, try again
+  // For PNG, this may not help much, so we use larger steps for faster convergence
+  const qualityStep = outputFormat.mimeType === 'image/png' ? 0.2 : 0.1;
   if (blob.size > MAX_SIZE_BYTES && quality > 0.1 && iteration < maxIterations) {
-    return compressWithQuality(canvas, fileName, quality - 0.1, iteration + 1);
+    return compressWithQuality(canvas, fileName, outputFormat, quality - qualityStep, iteration + 1);
   }
 
   // If we've reduced quality to minimum and still too large, resize dimensions
@@ -106,7 +111,7 @@ async function compressWithQuality(
     tempCtx.drawImage(img, 0, 0, newWidth, newHeight);
 
     // Try compression again with reset quality
-    return compressWithQuality(tempCanvas, fileName, 0.9, iteration + 1);
+    return compressWithQuality(tempCanvas, fileName, outputFormat, 0.9, iteration + 1);
   }
 
   // Final progress
@@ -115,5 +120,18 @@ async function compressWithQuality(
     progress: 100,
   } as CompressionResult);
 
-  return { blob, fileName };
+  // Update filename with correct extension
+  const newFileName = updateFileExtension(fileName, outputFormat.extension);
+  return { blob, fileName: newFileName };
+}
+
+/**
+ * Updates the file extension to match the output format
+ */
+function updateFileExtension(fileName: string, newExtension: string): string {
+  const lastDotIndex = fileName.lastIndexOf('.');
+  if (lastDotIndex === -1) {
+    return fileName + newExtension;
+  }
+  return fileName.substring(0, lastDotIndex) + newExtension;
 }

@@ -126,6 +126,9 @@ async function compressWithWorker(
 
         ctx.drawImage(img, 0, 0);
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        
+        // Determine best output format based on image characteristics
+        const outputFormat = getBestOutputFormat(file, canvas);
 
         // Set up worker message handler
         worker.onmessage = (e: MessageEvent) => {
@@ -136,7 +139,7 @@ async function compressWithWorker(
           } else if (type === 'success' && blob) {
             worker.terminate();
             const compressedFile = new File([blob], fileName || file.name, {
-              type: 'image/jpeg',
+              type: outputFormat.mimeType,
               lastModified: Date.now(),
             });
             resolve(compressedFile);
@@ -156,6 +159,8 @@ async function compressWithWorker(
           type: 'compress',
           imageData,
           fileName: file.name,
+          fileType: file.type,
+          outputFormat,
           width: canvas.width,
           height: canvas.height,
         });
