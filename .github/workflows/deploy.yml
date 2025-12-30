@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write  # For deployment comments
 
 concurrency:
   group: "netlify-deploy"
@@ -31,6 +32,13 @@ jobs:
     - name: Install dependencies
       run: npm ci
       
+    - name: Run security audit
+      run: npm audit --audit-level=high
+      continue-on-error: true
+      
+    - name: Run linting and type checking
+      run: npm run test
+      
     - name: Setup Supabase CLI
       uses: supabase/setup-cli@v1
       with:
@@ -39,7 +47,7 @@ jobs:
     - name: Run Supabase migrations
       run: |
         # Link to remote project and push migrations
-        supabase link --project-ref $(echo "${{ secrets.VITE_SUPABASE_URL }}" | sed 's/.*\/\/\([^.]*\).*/\1/')
+        supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}"
         supabase db push
       env:
         SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
