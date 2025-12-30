@@ -80,6 +80,10 @@ serve(async (req) => {
     // Get Stripe secret key from environment
     const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
     if (!stripeSecretKey) {
+      // In development, log the configuration issue for easier debugging
+      if (Deno.env.get('ENVIRONMENT') === 'development') {
+        console.error('Missing STRIPE_SECRET_KEY environment variable. Payment processing is unavailable.');
+      }
       throw new Error('Payment processing unavailable');
     }
 
