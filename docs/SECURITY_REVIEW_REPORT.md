@@ -106,7 +106,7 @@ if (!emailRegex.test(customer_email)) {
    ```sql
    ALTER TABLE woolwitch.orders 
    ADD CONSTRAINT orders_email_format_check 
-   CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$');
+   CHECK (email ~* '^[A-Za-z0-9]([A-Za-z0-9._%-]*[A-Za-z0-9])?@[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?\.[A-Za-z]{2,}$');
    ```
 
 2. **Amount Limits**
