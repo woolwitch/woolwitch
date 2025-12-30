@@ -78,7 +78,7 @@ The database lacked several critical security controls:
 - Medium - Potential for storage directory traversal
 
 **Remediation**:
-Created comprehensive security migration `20251230133323_woolwitch_security_enhancements.sql` with:
+Created comprehensive security migration `20251230153000_woolwitch_security_enhancements.sql` with:
 
 1. **Rate Limiting**:
    - Anonymous order creation limited to 10 per hour globally
@@ -108,7 +108,7 @@ Created comprehensive security migration `20251230133323_woolwitch_security_enha
    - Authentication required for uploads
 
 **Files Changed**:
-- `supabase/migrations/20251230133323_woolwitch_security_enhancements.sql`
+- `supabase/migrations/20251230153000_woolwitch_security_enhancements.sql`
 - `docs/DEPLOYMENT_SECURITY.md`
 
 ---

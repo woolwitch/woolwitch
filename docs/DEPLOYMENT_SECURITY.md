@@ -104,7 +104,7 @@ All tables have RLS enabled with carefully designed policies:
 - **Self-View**: Users can view their own role
 - **Admin Only Write**: Only admins can change roles (via database)
 
-### Security Enhancements (Added in Migration 20251230133323)
+### Security Enhancements (Added in Migration 20251230153000)
 
 1. **Rate Limiting**
    - Anonymous order creation limited to 10 per hour globally
