@@ -7,6 +7,9 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  # Install devDependencies (including vite) during build
+  # Required because vite is a build tool needed at build time
+  NPM_FLAGS = "--include=dev"
 
 # Security: Secrets Scanning Configuration
 # https://docs.netlify.com/security/secrets/secrets-scanning/
