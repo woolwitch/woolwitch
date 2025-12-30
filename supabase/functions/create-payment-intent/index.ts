@@ -79,7 +79,9 @@ serve(async (req) => {
     }
 
     // Validate email format
-    const emailRegex = /^[A-Za-z0-9]([A-Za-z0-9._%-]*[A-Za-z0-9])?@[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?\.[A-Za-z]{2,}$/;
+    // Disallow consecutive dots and require valid local and domain labels
+    const emailRegex =
+      /^(?!.*\.\.)[A-Za-z0-9](?:[A-Za-z0-9._%+-]{0,62}[A-Za-z0-9])?@[A-Za-z0-9](?:[A-Za-z0-9-]{0,62}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,62}[A-Za-z0-9])?)+$/;
     if (!emailRegex.test(customer_email)) {
       throw new Error('Invalid email address');
     }
