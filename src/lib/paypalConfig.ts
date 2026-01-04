@@ -22,16 +22,17 @@ export interface PayPalConfig {
  * Get PayPal client ID based on current environment
  */
 export const getPayPalClientId = (): string => {
-  const isProduction = import.meta.env.VITE_APP_ENV === 'production';
+  const isProduction = import.meta.env.PROD;
   
+  // Try environment-specific variables first, then fall back to single VITE_PAYPAL_CLIENT_ID
   const clientId = isProduction 
-    ? import.meta.env.VITE_PAYPAL_CLIENT_ID_PRODUCTION
-    : import.meta.env.VITE_PAYPAL_CLIENT_ID_SANDBOX;
+    ? (import.meta.env.VITE_PAYPAL_CLIENT_ID_PRODUCTION || import.meta.env.VITE_PAYPAL_CLIENT_ID)
+    : (import.meta.env.VITE_PAYPAL_CLIENT_ID_SANDBOX || import.meta.env.VITE_PAYPAL_CLIENT_ID);
 
   if (!clientId) {
     throw new Error(
       `PayPal client ID not configured for ${isProduction ? 'production' : 'sandbox'} environment. ` +
-      `Expected ${isProduction ? 'VITE_PAYPAL_CLIENT_ID_PRODUCTION' : 'VITE_PAYPAL_CLIENT_ID_SANDBOX'} to be set.`
+      `Expected VITE_PAYPAL_CLIENT_ID to be set.`
     );
   }
 
@@ -40,9 +41,11 @@ export const getPayPalClientId = (): string => {
 
 /**
  * Get PayPal environment setting
+ * PayPal automatically detects environment based on the client ID format
+ * (Live keys start with 'A', sandbox keys have different format)
  */
 export const getPayPalEnvironment = (): PayPalEnvironment => {
-  return import.meta.env.VITE_APP_ENV === 'production' ? 'production' : 'sandbox';
+  return import.meta.env.PROD ? 'production' : 'sandbox';
 };
 
 /**
