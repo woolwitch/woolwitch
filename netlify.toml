@@ -42,11 +42,11 @@
     # Content Security Policy
     # Notes:
     # - No 'unsafe-eval' (good for React/Vite production)
-    # - No 'unsafe-inline' for scripts (stricter; add back only if you truly need it)
+    # - Uses hash for Vite's module preload polyfill instead of 'unsafe-inline'
     # - style-src keeps 'unsafe-inline' because many React setups/libraries rely on inline styles
     Content-Security-Policy = """
       default-src 'self';
-      script-src 'self' https://js.stripe.com https://www.paypal.com https://www.paypalobjects.com;
+      script-src 'self' 'sha256-Zk1msrYlCvQ/3PbKOy2ITmQ4mj/F2kYi66QQb21NUYo=' https://js.stripe.com https://www.paypal.com https://www.paypalobjects.com;
       connect-src 'self'
         https://*.supabase.co
         wss://*.supabase.co
