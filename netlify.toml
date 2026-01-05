@@ -1,5 +1,4 @@
 # Netlify Configuration
-# https://docs.netlify.com/configure-builds/file-based-configuration/
 
 [build]
   publish = "dist"
@@ -7,61 +6,61 @@
 
 [build.environment]
   NODE_VERSION = "20"
-  # Install devDependencies (including vite) during build
-  # Required because vite is a build tool needed at build time
+  # Ensures devDependencies are installed (Vite is a devDependency in most setups)
   NPM_FLAGS = "--include=dev"
 
-# Security: Secrets Scanning Configuration
-# https://docs.netlify.com/security/secrets/secrets-scanning/
+# Allow these "public" env vars to appear in build output without failing secrets scanning
 [build.processing.secrets]
-  # Allow these environment variables to be present in build output
-  # These are Supabase public keys that are SAFE to expose:
-  # - VITE_SUPABASE_URL: Public URL for Supabase project
-  # - VITE_SUPABASE_ANON_KEY: Anonymous/public key designed for client-side use
-  # - VITE_PAYPAL_CLIENT_ID: Anonymous/public key designed for client-side use
-  # 
-  # These keys are protected by Supabase Row Level Security (RLS) policies
-  # and are intended to be publicly accessible. See:
-  # https://supabase.com/docs/guides/api#api-url-and-keys
   omit_keys = [
     "VITE_SUPABASE_URL",
-    "VITE_SUPABASE_ANON_KEY"
+    "VITE_SUPABASE_ANON_KEY",
+    "VITE_PAYPAL_CLIENT_ID",
   ]
 
 # Security Headers
-# These headers enhance security by preventing common web vulnerabilities
 [[headers]]
   for = "/*"
   [headers.values]
-    # Prevent the site from being embedded in iframes (clickjacking protection)
+    # Clickjacking protection
     X-Frame-Options = "DENY"
-    
-    # Prevent MIME type sniffing
+
+    # MIME sniffing protection
     X-Content-Type-Options = "nosniff"
-    
-    # Enable XSS protection in older browsers
+
+    # Legacy header (mostly ignored by modern browsers, harmless)
     X-XSS-Protection = "1; mode=block"
-    
-    # Control referrer information
+
+    # Reduce referrer leakage
     Referrer-Policy = "strict-origin-when-cross-origin"
-    
-    # Restrict browser features
+
+    # Lock down powerful features (remove payment=() if it causes checkout issues)
     Permissions-Policy = "geolocation=(), microphone=(), camera=(), payment=()"
-    
-    # Strict Transport Security (force HTTPS)
+
+    # Enforce HTTPS
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
-    
+
     # Content Security Policy
-    # Note: 'unsafe-inline' and 'unsafe-eval' are required for:
-    # - Vite's HMR and development tooling
-    # - React's inline styles
-    # - Third-party integrations (Stripe, Google Analytics, PayPal)
-    # For enhanced security, consider using nonces in production builds
+    # Notes:
+    # - No 'unsafe-eval' (good for React/Vite production)
+    # - No 'unsafe-inline' for scripts (stricter; add back only if you truly need it)
+    # - style-src keeps 'unsafe-inline' because many React setups/libraries rely on inline styles
     Content-Security-Policy = """
       default-src 'self';
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://www.paypal.com https://www.paypalobjects.com;
-      connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://www.paypal.com;
-      img-src 'self' data: https://*.supabase.co https://avatars.githubusercontent.com https: blob:;
+      script-src 'self' https://js.stripe.com https://www.paypal.com https://www.paypalobjects.com;
+      connect-src 'self'
+        https://*.supabase.co
+        wss://*.supabase.co
+        https://api.stripe.com
+        https://*.stripe.com
+        https://r.stripe.com
+        https://www.paypal.com
+        https://www.paypalobjects.com;
+      img-src 'self' data: blob:
+        https://*.supabase.co
+        https://avatars.githubusercontent.com
+        https://*.stripe.com
+        https://www.paypal.com
+        https://www.paypalobjects.com;
       style-src 'self' 'unsafe-inline';
       font-src 'self' data:;
       frame-src https://js.stripe.com https://hooks.stripe.com https://www.paypal.com;
@@ -73,33 +72,24 @@
     """
 
 # Cache static assets for better performance
+# (Vite fingerprints assets, so immutable caching is ideal)
 [[headers]]
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# Redirect rules for single-page application
+# SPA Redirect (React Router / client-side routing)
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-  force = false
-  # Don't apply redirect to files that exist
-  conditions = {path = "^(?!.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|json|xml|txt|html)$).*"}
 
-# Build context-specific settings
-[context.production]
-  [context.production.environment]
-    NODE_ENV = "production"
+# Context-specific env
+[context.production.environment]
+  NODE_ENV = "production"
 
-[context.deploy-preview]
-  [context.deploy-preview.environment]
-    NODE_ENV = "production"
+[context.deploy-preview.environment]
+  NODE_ENV = "production"
 
-[context.branch-deploy]
-  [context.branch-deploy.environment]
-    NODE_ENV = "production"
-
-# Plugin configuration (if needed)
-# [[plugins]]
-#   package = "@netlify/plugin-lighthouse"
+[context.branch-deploy.environment]
+  NODE_ENV = "production"
