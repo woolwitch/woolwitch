@@ -10,6 +10,8 @@ on:
 permissions:
   contents: read
   pull-requests: write  # For deployment comments
+  statuses: write       # For commit status updates
+  deployments: write    # For deployment tracking
 
 concurrency:
   group: "netlify-deploy"
@@ -62,6 +64,7 @@ jobs:
       env:
         VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
         VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        VITE_PAYPAL_CLIENT_ID: ${{ secrets.VITE_PAYPAL_CLIENT_ID }}
         
     - name: Deploy to Netlify
       uses: nwtgck/actions-netlify@v3.0
