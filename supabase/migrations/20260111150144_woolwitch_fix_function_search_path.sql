@@ -7,7 +7,8 @@
 -- ========================================
 
 -- Fix update_updated_at_column
-CREATE OR REPLACE FUNCTION woolwitch.update_updated_at_column()
+DROP FUNCTION IF EXISTS woolwitch.update_updated_at_column() CASCADE;
+CREATE FUNCTION woolwitch.update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = now();
@@ -17,7 +18,8 @@ $$ LANGUAGE plpgsql
    SET search_path = woolwitch, pg_catalog;
 
 -- Fix check_order_rate_limit
-CREATE OR REPLACE FUNCTION woolwitch.check_order_rate_limit()
+DROP FUNCTION IF EXISTS woolwitch.check_order_rate_limit() CASCADE;
+CREATE FUNCTION woolwitch.check_order_rate_limit()
 RETURNS trigger AS $$
 DECLARE
   recent_order_count integer;
@@ -40,7 +42,8 @@ $$ LANGUAGE plpgsql
    SET search_path = woolwitch, pg_catalog;
 
 -- Fix validate_order_totals
-CREATE OR REPLACE FUNCTION woolwitch.validate_order_totals()
+DROP FUNCTION IF EXISTS woolwitch.validate_order_totals() CASCADE;
+CREATE FUNCTION woolwitch.validate_order_totals()
 RETURNS trigger AS $$
 BEGIN
   -- Ensure totals are positive
@@ -65,7 +68,8 @@ $$ LANGUAGE plpgsql
    SET search_path = woolwitch, pg_catalog;
 
 -- Fix validate_payment_amount
-CREATE OR REPLACE FUNCTION woolwitch.validate_payment_amount()
+DROP FUNCTION IF EXISTS woolwitch.validate_payment_amount() CASCADE;
+CREATE FUNCTION woolwitch.validate_payment_amount()
 RETURNS trigger AS $$
 DECLARE
   order_total numeric;
@@ -91,7 +95,8 @@ $$ LANGUAGE plpgsql
 -- ========================================
 
 -- Fix get_products
-CREATE OR REPLACE FUNCTION woolwitch_api.get_products(
+DROP FUNCTION IF EXISTS woolwitch_api.get_products(text, text, int, int) CASCADE;
+CREATE FUNCTION woolwitch_api.get_products(
   p_category text DEFAULT NULL,
   p_search text DEFAULT NULL,
   p_limit int DEFAULT 50,
@@ -142,7 +147,8 @@ $$ LANGUAGE plpgsql
    SET search_path = woolwitch, woolwitch_api, auth, pg_catalog;
 
 -- Fix get_product_by_id
-CREATE OR REPLACE FUNCTION woolwitch_api.get_product_by_id(p_product_id uuid)
+DROP FUNCTION IF EXISTS woolwitch_api.get_product_by_id(uuid) CASCADE;
+CREATE FUNCTION woolwitch_api.get_product_by_id(p_product_id uuid)
 RETURNS TABLE (
   id uuid,
   name text,
@@ -178,7 +184,8 @@ $$ LANGUAGE plpgsql
    SET search_path = woolwitch, woolwitch_api, auth, pg_catalog;
 
 -- Fix get_products_by_ids
-CREATE OR REPLACE FUNCTION woolwitch_api.get_products_by_ids(p_product_ids uuid[])
+DROP FUNCTION IF EXISTS woolwitch_api.get_products_by_ids(uuid[]) CASCADE;
+CREATE FUNCTION woolwitch_api.get_products_by_ids(p_product_ids uuid[])
 RETURNS TABLE (
   id uuid,
   name text,
@@ -205,7 +212,8 @@ $$ LANGUAGE plpgsql
    SET search_path = woolwitch, woolwitch_api, pg_catalog;
 
 -- Fix get_categories
-CREATE OR REPLACE FUNCTION woolwitch_api.get_categories()
+DROP FUNCTION IF EXISTS woolwitch_api.get_categories() CASCADE;
+CREATE FUNCTION woolwitch_api.get_categories()
 RETURNS TABLE (category text) AS $$
 BEGIN
   RETURN QUERY
@@ -220,7 +228,8 @@ $$ LANGUAGE plpgsql
    SET search_path = woolwitch, woolwitch_api, pg_catalog;
 
 -- Fix create_order
-CREATE OR REPLACE FUNCTION woolwitch_api.create_order(
+DROP FUNCTION IF EXISTS woolwitch_api.create_order(text, text, jsonb, numeric, numeric, numeric, text, jsonb) CASCADE;
+CREATE FUNCTION woolwitch_api.create_order(
   p_email text,
   p_full_name text,
   p_address jsonb,
@@ -290,7 +299,8 @@ $$ LANGUAGE plpgsql
    SET search_path = woolwitch, woolwitch_api, auth, pg_catalog;
 
 -- Fix create_payment
-CREATE OR REPLACE FUNCTION woolwitch_api.create_payment(
+DROP FUNCTION IF EXISTS woolwitch_api.create_payment(uuid, text, text, numeric, text, jsonb, jsonb) CASCADE;
+CREATE FUNCTION woolwitch_api.create_payment(
   p_order_id uuid,
   p_payment_method text,
   p_payment_id text,
@@ -340,7 +350,8 @@ $$ LANGUAGE plpgsql
    SET search_path = woolwitch, woolwitch_api, auth, pg_catalog;
 
 -- Fix update_order_status
-CREATE OR REPLACE FUNCTION woolwitch_api.update_order_status(
+DROP FUNCTION IF EXISTS woolwitch_api.update_order_status(uuid, text) CASCADE;
+CREATE FUNCTION woolwitch_api.update_order_status(
   p_order_id uuid,
   p_status text
 )
@@ -360,7 +371,8 @@ $$ LANGUAGE plpgsql
    SET search_path = woolwitch, woolwitch_api, auth, pg_catalog;
 
 -- Fix get_user_orders
-CREATE OR REPLACE FUNCTION woolwitch_api.get_user_orders(
+DROP FUNCTION IF EXISTS woolwitch_api.get_user_orders(int) CASCADE;
+CREATE FUNCTION woolwitch_api.get_user_orders(
   p_limit int DEFAULT 50
 )
 RETURNS TABLE (
@@ -403,7 +415,8 @@ $$ LANGUAGE plpgsql
    SET search_path = woolwitch, woolwitch_api, auth, pg_catalog;
 
 -- Fix get_all_orders
-CREATE OR REPLACE FUNCTION woolwitch_api.get_all_orders(
+DROP FUNCTION IF EXISTS woolwitch_api.get_all_orders(text, text, int, int) CASCADE;
+CREATE FUNCTION woolwitch_api.get_all_orders(
   p_status text DEFAULT NULL,
   p_payment_method text DEFAULT NULL,
   p_limit int DEFAULT 50,
@@ -456,7 +469,8 @@ $$ LANGUAGE plpgsql
    SET search_path = woolwitch, woolwitch_api, auth, pg_catalog;
 
 -- Fix get_order_by_id
-CREATE OR REPLACE FUNCTION woolwitch_api.get_order_by_id(p_order_id uuid)
+DROP FUNCTION IF EXISTS woolwitch_api.get_order_by_id(uuid) CASCADE;
+CREATE FUNCTION woolwitch_api.get_order_by_id(p_order_id uuid)
 RETURNS TABLE (
   id uuid,
   user_id uuid,
@@ -496,7 +510,8 @@ $$ LANGUAGE plpgsql
    SET search_path = woolwitch, woolwitch_api, auth, pg_catalog;
 
 -- Fix get_order_items
-CREATE OR REPLACE FUNCTION woolwitch_api.get_order_items(p_order_id uuid)
+DROP FUNCTION IF EXISTS woolwitch_api.get_order_items(uuid) CASCADE;
+CREATE FUNCTION woolwitch_api.get_order_items(p_order_id uuid)
 RETURNS TABLE (
   id uuid,
   order_id uuid,
@@ -537,7 +552,8 @@ $$ LANGUAGE plpgsql
    SET search_path = woolwitch, woolwitch_api, auth, pg_catalog;
 
 -- Fix create_product
-CREATE OR REPLACE FUNCTION woolwitch_api.create_product(
+DROP FUNCTION IF EXISTS woolwitch_api.create_product(text, text, numeric, text, text, integer, numeric, boolean) CASCADE;
+CREATE FUNCTION woolwitch_api.create_product(
   p_name text,
   p_description text,
   p_price numeric,
@@ -583,7 +599,8 @@ $$ LANGUAGE plpgsql
    SET search_path = woolwitch, woolwitch_api, auth, pg_catalog;
 
 -- Fix update_product
-CREATE OR REPLACE FUNCTION woolwitch_api.update_product(
+DROP FUNCTION IF EXISTS woolwitch_api.update_product(uuid, text, text, numeric, text, text, integer, numeric, boolean) CASCADE;
+CREATE FUNCTION woolwitch_api.update_product(
   p_product_id uuid,
   p_name text,
   p_description text,
@@ -617,7 +634,8 @@ $$ LANGUAGE plpgsql
    SET search_path = woolwitch, woolwitch_api, auth, pg_catalog;
 
 -- Fix delete_product
-CREATE OR REPLACE FUNCTION woolwitch_api.delete_product(p_product_id uuid)
+DROP FUNCTION IF EXISTS woolwitch_api.delete_product(uuid) CASCADE;
+CREATE FUNCTION woolwitch_api.delete_product(p_product_id uuid)
 RETURNS void AS $$
 BEGIN
   IF NOT woolwitch.is_admin() THEN
@@ -639,3 +657,17 @@ COMMENT ON FUNCTION woolwitch.update_updated_at_column() IS 'Trigger function to
 COMMENT ON FUNCTION woolwitch.check_order_rate_limit() IS 'Validates order rate limits to prevent abuse - now with secure search_path';
 COMMENT ON FUNCTION woolwitch.validate_order_totals() IS 'Validates order financial totals - now with secure search_path';
 COMMENT ON FUNCTION woolwitch.validate_payment_amount() IS 'Validates payment amount matches order total - now with secure search_path';
+
+-- ========================================
+-- RECREATE TRIGGERS (dropped by CASCADE)
+-- ========================================
+
+-- Recreate validate_order_before_insert trigger
+CREATE TRIGGER validate_order_before_insert
+  BEFORE INSERT ON woolwitch.orders
+  FOR EACH ROW EXECUTE FUNCTION woolwitch.validate_order_totals();
+
+-- Recreate validate_payment_before_insert trigger  
+CREATE TRIGGER validate_payment_before_insert
+  BEFORE INSERT ON woolwitch.payments
+  FOR EACH ROW EXECUTE FUNCTION woolwitch.validate_payment_amount();
