@@ -117,7 +117,7 @@ export class DataService {
 
     try {
       let query = supabase
-        .from('products')
+        .from('products_view')
         .select('id, name, price, image_url, category, stock_quantity, delivery_charge, is_available')
         .eq('is_available', true)
         .order('created_at', { ascending: false })
@@ -166,7 +166,7 @@ export class DataService {
 
     try {
       const { data, error } = await supabase
-        .from('products')
+        .from('products_view')
         .select('id, name, price, image_url, category')
         .in('id', productIds);
 
@@ -195,7 +195,7 @@ export class DataService {
 
     try {
       const { data, error } = await supabase
-        .from('products')
+        .from('products_view')
         .select('*')
         .eq('id', productId)
         .single();
@@ -225,7 +225,7 @@ export class DataService {
 
     try {
       const { data, error } = await supabase
-        .from('products')
+        .from('products_view')
         .select('category')
         .eq('is_available', true);
 

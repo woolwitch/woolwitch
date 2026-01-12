@@ -18,9 +18,9 @@ export async function validateCartProducts(cartItems: CartItem[]): Promise<{
   const errors: string[] = [];
   const invalidItems: CartItem[] = [];
   
-  // Get all current product IDs from database
+  // Get all current product IDs from database using the products_view
   const { data: products, error } = await supabase
-    .from('products')
+    .from('products_view')
     .select('id, name');
     
   if (error) {

@@ -40,10 +40,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
   process.exit(1);
 }
 
-// Create client with woolwitch schema (for compatibility with RPC calls)
+// Create client with woolwitch_api schema (for API layer access)
 const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   db: {
-    schema: 'woolwitch'
+    schema: 'woolwitch_api'
   }
 });
 
