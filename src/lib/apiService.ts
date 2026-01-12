@@ -7,6 +7,7 @@
  */
 
 import { supabase } from './supabase';
+import { handleApiError } from './errorHandler';
 import type { Product, Order, OrderItem } from '../types/database';
 
 // ========================================
@@ -30,10 +31,7 @@ export async function getProducts(params: ProductListParams = {}): Promise<Produ
     p_offset: offset
   });
 
-  if (error) {
-    console.error('Error fetching products:', error);
-    throw error;
-  }
+  if (error) handleApiError(error, 'fetching products');
 
   return (data || []) as Product[];
 }
@@ -43,10 +41,7 @@ export async function getProductById(productId: string): Promise<Product | null>
     p_product_id: productId
   });
 
-  if (error) {
-    console.error('Error fetching product:', error);
-    throw error;
-  }
+  if (error) handleApiError(error, 'fetching product');
 
   return data && data.length > 0 ? (data[0] as Product) : null;
 }
@@ -58,10 +53,7 @@ export async function getProductsByIds(productIds: string[]): Promise<Product[]>
     p_product_ids: productIds
   });
 
-  if (error) {
-    console.error('Error fetching products by IDs:', error);
-    throw error;
-  }
+  if (error) handleApiError(error, 'fetching products by IDs');
 
   return (data || []) as Product[];
 }
@@ -69,10 +61,7 @@ export async function getProductsByIds(productIds: string[]): Promise<Product[]>
 export async function getCategories(): Promise<string[]> {
   const { data, error } = await supabase.rpc('get_categories');
 
-  if (error) {
-    console.error('Error fetching categories:', error);
-    throw error;
-  }
+  if (error) handleApiError(error, 'fetching categories');
 
   return (data || []).map((item: any) => item.category);
 }
@@ -104,10 +93,7 @@ export async function createProduct(productData: CreateProductData): Promise<str
     p_is_available: productData.is_available ?? true
   });
 
-  if (error) {
-    console.error('Error creating product:', error);
-    throw error;
-  }
+  if (error) handleApiError(error, 'creating product');
 
   return data as string;
 }
@@ -128,10 +114,7 @@ export async function updateProduct(
     p_is_available: productData.is_available ?? true
   });
 
-  if (error) {
-    console.error('Error updating product:', error);
-    throw error;
-  }
+  if (error) handleApiError(error, 'updating product');
 }
 
 export async function deleteProduct(productId: string): Promise<void> {
@@ -139,10 +122,7 @@ export async function deleteProduct(productId: string): Promise<void> {
     p_product_id: productId
   });
 
-  if (error) {
-    console.error('Error deleting product:', error);
-    throw error;
-  }
+  if (error) handleApiError(error, 'deleting product');
 }
 
 // ========================================
@@ -182,10 +162,7 @@ export async function createOrder(orderData: CreateOrderParams): Promise<string>
     p_order_items: orderData.orderItems
   });
 
-  if (error) {
-    console.error('Error creating order:', error);
-    throw error;
-  }
+  if (error) handleApiError(error, 'creating order');
 
   return data as string;
 }
@@ -209,10 +186,7 @@ export async function createPayment(params: {
     p_stripe_details: params.stripeDetails || null
   });
 
-  if (error) {
-    console.error('Error creating payment:', error);
-    throw error;
-  }
+  if (error) handleApiError(error, 'creating payment');
 
   return data as string;
 }
@@ -226,10 +200,7 @@ export async function updateOrderStatus(
     p_status: status
   });
 
-  if (error) {
-    console.error('Error updating order status:', error);
-    throw error;
-  }
+  if (error) handleApiError(error, 'updating order status');
 }
 
 export async function updatePaymentStatus(
@@ -243,10 +214,7 @@ export async function updatePaymentStatus(
     p_payment_details: paymentDetails || null
   });
 
-  if (error) {
-    console.error('Error updating payment status:', error);
-    throw error;
-  }
+  if (error) handleApiError(error, 'updating payment status');
 }
 
 export async function getUserOrders(limit: number = 50): Promise<Order[]> {
@@ -254,10 +222,7 @@ export async function getUserOrders(limit: number = 50): Promise<Order[]> {
     p_limit: limit
   });
 
-  if (error) {
-    console.error('Error fetching user orders:', error);
-    throw error;
-  }
+  if (error) handleApiError(error, 'fetching user orders');
 
   return (data || []) as Order[];
 }
@@ -277,10 +242,7 @@ export async function getAllOrders(params: {
     p_offset: offset
   });
 
-  if (error) {
-    console.error('Error fetching all orders:', error);
-    throw error;
-  }
+  if (error) handleApiError(error, 'fetching all orders');
 
   return (data || []) as Order[];
 }
@@ -290,10 +252,7 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
     p_order_id: orderId
   });
 
-  if (error) {
-    console.error('Error fetching order:', error);
-    throw error;
-  }
+  if (error) handleApiError(error, 'fetching order');
 
   return data && data.length > 0 ? (data[0] as Order) : null;
 }
@@ -303,10 +262,7 @@ export async function getOrderItems(orderId: string): Promise<OrderItem[]> {
     p_order_id: orderId
   });
 
-  if (error) {
-    console.error('Error fetching order items:', error);
-    throw error;
-  }
+  if (error) handleApiError(error, 'fetching order items');
 
   return (data || []) as OrderItem[];
 }
@@ -338,10 +294,7 @@ export async function queryProductsView(params: {
 
   const { data, error } = await query;
 
-  if (error) {
-    console.error('Error querying products view:', error);
-    throw error;
-  }
+  if (error) handleApiError(error, 'querying products view');
 
   return (data || []) as Product[];
 }

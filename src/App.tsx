@@ -15,11 +15,7 @@ function App() {
   const [currentPage, setCurrentPage] = useState<'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact' | 'privacy-policy' | 'terms-of-service' | 'orders'>('shop');
 
   const renderPage = () => {
-    const handleCartNavigation = (page: 'shop' | 'cart' | 'checkout') => {
-      setCurrentPage(page);
-    };
-
-    const handleCheckoutNavigation = (page: 'shop' | 'cart' | 'checkout') => {
+    const handleNavigation = (page: 'shop' | 'cart' | 'checkout') => {
       setCurrentPage(page);
     };
 
@@ -27,9 +23,9 @@ function App() {
       case 'shop':
         return <Shop />;
       case 'cart':
-        return <Cart onNavigate={handleCartNavigation} />;
+        return <Cart onNavigate={handleNavigation} />;
       case 'checkout':
-        return <Checkout onNavigate={handleCheckoutNavigation} />;
+        return <Checkout onNavigate={handleNavigation} />;
       case 'admin':
         return <Admin />;
       case 'orders':
