@@ -8,13 +8,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error("Missing Supabase environment variables");
 }
 
-// Create a type that maps woolwitch schema to public for Supabase client compatibility
+// Create a type that maps woolwitch_api schema to public for Supabase client compatibility
 type SupabaseDatabase = Omit<Database, 'public'> & {
-  public: Database['woolwitch']
+  public: Database['woolwitch_api']
 }
 
 // Create the Supabase client with proper type mapping
-// The client will use the woolwitch schema but TypeScript will see it as public schema
+// The client will use the woolwitch_api schema (API layer) but TypeScript will see it as public schema
 export const supabase = createClient<SupabaseDatabase>(supabaseUrl, supabaseAnonKey, {
-  db: { schema: 'woolwitch' as any }
+  db: { schema: 'woolwitch_api' as any }
 });

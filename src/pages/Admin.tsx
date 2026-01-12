@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plus, Edit2, Trash2, Save, X, Upload, Package, ShoppingCart } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { dataService } from '../lib/dataService';
+import { getProducts, createProduct, updateProduct, deleteProduct, CreateProductData } from '../lib/apiService';
 import type { Product, Order } from '../types/database';
 import { useAuth } from '../contexts/AuthContext';
 import { getAllOrders, updateOrderStatus, getOrderStatistics, formatOrderStatus, getOrderStatusColor } from '../lib/orderService';
@@ -57,14 +58,9 @@ export function Admin() {
   async function fetchAllProducts() {
     try {
       setLoading(true);
-      // For admin, we need full product data
-      const { data, error } = await (supabase as any)
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setProducts((data as any) || []);
+      // For admin, use API layer to get all products (including unavailable ones)
+      const data = await getProducts({ limit: 1000 });
+      setProducts(data || []);
       
       // Clear cache since admin might have updated data
       dataService.clearCache();
@@ -275,7 +271,7 @@ export function Admin() {
         return;
       }
 
-      const productData = {
+      const productData: CreateProductData = {
         name: formData.name.trim(),
         description: formData.description.trim(),
         price: price,
@@ -287,18 +283,9 @@ export function Admin() {
       };
 
       if (editingId) {
-        const { error } = await (supabase as any)
-          .from('products')
-          .update(productData)
-          .eq('id', editingId);
-
-        if (error) throw error;
+        await updateProduct(editingId, productData);
       } else {
-        const { error } = await (supabase as any)
-          .from('products')
-          .insert([productData]);
-
-        if (error) throw error;
+        await createProduct(productData);
       }
 
       await fetchAllProducts();
@@ -312,12 +299,7 @@ export function Admin() {
     if (!confirm('Are you sure you want to delete this product?')) return;
 
     try {
-      const { error } = await (supabase as any)
-        .from('products')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      await deleteProduct(id);
       await fetchAllProducts();
     } catch (error) {
       alert('Error deleting product. Please try again.');

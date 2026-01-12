@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function checkAdminStatus(userId: string) {
     try {
       const { data, error } = await (supabase as any)
-        .from('user_roles')
+        .from('user_roles_view')
         .select('role')
         .eq('user_id', userId)
         .maybeSingle();

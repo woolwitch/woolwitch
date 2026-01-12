@@ -4,7 +4,16 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { supabase } from './supabase';
+import { 
+  createOrder as apiCreateOrder,
+  createPayment as apiCreatePayment,
+  updateOrderStatus as apiUpdateOrderStatus,
+  getUserOrders as apiGetUserOrders,
+  getAllOrders as apiGetAllOrders,
+  getOrderById as apiGetOrderById,
+  getOrderItems as apiGetOrderItems,
+  CreateOrderParams
+} from './apiService';
 import { validateCartProducts, logCartValidation } from './cartDebug';
 import type { 
   Order, 
@@ -97,32 +106,8 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
   const total = subtotal + deliveryTotal;
 
   try {
-    const { data: order, error: orderError } = await (supabase as any)
-      .from('orders')
-      .insert({
-        user_id: (await supabase.auth.getUser()).data.user?.id || null,
-        email: customerInfo.email,
-        full_name: customerInfo.fullName,
-        address: customerInfo.address as any,
-        subtotal,
-        delivery_total: deliveryTotal,
-        total,
-        status: 'pending',
-        payment_method: paymentMethod
-      } as any)
-      .select()
-      .single();
-
-    if (orderError || !order) {
-      // Log error details only in development
-      if (import.meta.env.DEV) {
-        console.error('Order creation error:', orderError);
-      }
-      throw new Error('Failed to create order. Please try again.');
-    }
-
+    // Build order items array for API call
     const orderItems = cartItems.map(item => ({
-      order_id: (order as any).id,
       product_id: item.product.id,
       product_name: item.product.name,
       product_price: item.product.price,
@@ -130,56 +115,38 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
       delivery_charge: item.product.delivery_charge || 0
     }));
 
-    const { error: itemsError } = await (supabase as any)
-      .from('order_items')
-      .insert(orderItems as any);
+    // Use API layer to create order
+    const orderId = await apiCreateOrder({
+      email: customerInfo.email,
+      fullName: customerInfo.fullName,
+      address: customerInfo.address,
+      subtotal,
+      deliveryTotal,
+      total,
+      paymentMethod,
+      orderItems
+    });
 
-    if (itemsError) {
-      // Log error details only in development
-      if (import.meta.env.DEV) {
-        console.error('Order items creation error:', itemsError);
-      }
-      
-      // Clean up the order if items failed
-      await (supabase as any).from('orders').delete().eq('id', (order as any).id);
-      
-      // Provide user-friendly error message based on error code
-      // PostgreSQL error code 23503 = foreign_key_violation
-      // Prioritize error code check as it's more reliable than string matching
-      const errorCode = itemsError.code;
-      const errorMsg = itemsError.message || '';
-      
-      if (errorCode === '23503' || errorMsg.includes('foreign key constraint')) {
-        throw new Error('One or more products in your cart are no longer available. Please refresh the page and try again.');
-      }
-      throw new Error('Failed to process order items. Please try again.');
-    }
-
+    // If payment ID is provided, create payment record
     if (paymentId) {
-      const paymentData = {
-        order_id: (order as any).id,
-        payment_method: paymentMethod,
-        payment_id: paymentId,
-        status: paymentMethod === 'paypal' ? 'completed' : (paymentMethod === 'card' ? 'completed' : 'pending'),
+      await apiCreatePayment({
+        orderId,
+        paymentMethod,
+        paymentId,
         amount: total,
-        currency: 'GBP',
-        paypal_details: paypalDetails || null,
-        stripe_details: stripeDetails || null
-      };
-
-      const { error: paymentError } = await (supabase as any)
-        .from('payments')
-        .insert(paymentData as any);
-
-      if (paymentError) {
-        // Log error details only in development
-        if (import.meta.env.DEV) {
-          console.error('Payment record creation error:', paymentError);
-        }
-      }
+        status: paymentMethod === 'paypal' ? 'completed' : (paymentMethod === 'card' ? 'completed' : 'pending'),
+        paypalDetails,
+        stripeDetails
+      });
     }
 
-    return order as unknown as Order;
+    // Fetch the created order to return
+    const order = await apiGetOrderById(orderId);
+    if (!order) {
+      throw new Error('Failed to retrieve created order');
+    }
+
+    return order;
 
   } catch (error) {
     // Log error details only in development
@@ -195,21 +162,8 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
  */
 export async function getOrderItems(orderId: string): Promise<any[]> {
   try {
-    const { data, error } = await (supabase as any)
-      .from('order_items')
-      .select('*')
-      .eq('order_id', orderId)
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      // Log error details only in development
-      if (import.meta.env.DEV) {
-        console.error('Error fetching order items:', error);
-      }
-      throw new Error('Failed to fetch order items');
-    }
-
-    return data || [];
+    const items = await apiGetOrderItems(orderId);
+    return items || [];
   } catch (error) {
     // Log error details only in development
     if (import.meta.env.DEV) {
@@ -220,13 +174,10 @@ export async function getOrderItems(orderId: string): Promise<any[]> {
 }
 
 export async function updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
-  const { error } = await (supabase as any)
-    .from('orders')
-    .update({ status, updated_at: new Date().toISOString() })
-    .eq('id', orderId);
-
-  if (error) {
-    throw new Error(`Failed to update order status: ${error.message}`);
+  try {
+    await apiUpdateOrderStatus(orderId, status);
+  } catch (error) {
+    throw new Error(`Failed to update order status: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
@@ -239,23 +190,18 @@ export async function createPaymentRecord(
   paypalDetails?: PayPalDetails,
   stripeDetails?: StripeDetails
 ): Promise<void> {
-  const paymentData = {
-    order_id: orderId,
-    payment_method: paymentMethod,
-    payment_id: paymentId,
-    status,
-    amount,
-    currency: 'GBP',
-    paypal_details: paypalDetails || null,
-    stripe_details: stripeDetails || null
-  };
-
-  const { error } = await (supabase as any)
-    .from('payments')
-    .insert(paymentData as any);
-
-  if (error) {
-    throw new Error(`Failed to create payment record: ${error.message}`);
+  try {
+    await apiCreatePayment({
+      orderId,
+      paymentMethod,
+      paymentId,
+      amount,
+      status,
+      paypalDetails,
+      stripeDetails
+    });
+  } catch (error) {
+    throw new Error(`Failed to create payment record: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
@@ -264,34 +210,21 @@ export async function createPaymentRecord(
 // ========================================
 
 export async function getUserOrders(limit: number = 50): Promise<Order[]> {
-  const { data: orders, error: ordersError } = await (supabase as any)
-    .from('orders')
-    .select(`*`)
-    .order('created_at', { ascending: false })
-    .limit(limit);
-
-  if (ordersError) {
-    throw new Error(`Failed to fetch user orders: ${ordersError.message}`);
+  try {
+    const orders = await apiGetUserOrders(limit);
+    return orders || [];
+  } catch (error) {
+    throw new Error(`Failed to fetch user orders: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
-
-  return (orders as any[]) || [];
 }
 
 export async function getOrderById(orderId: string): Promise<Order | null> {
-  const { data: order, error } = await (supabase as any)
-    .from('orders')
-    .select(`*`)
-    .eq('id', orderId)
-    .single();
-
-  if (error) {
-    if (error.code === 'PGRST116') {
-      return null;
-    }
-    throw new Error(`Failed to fetch order: ${error.message}`);
+  try {
+    const order = await apiGetOrderById(orderId);
+    return order;
+  } catch (error) {
+    throw new Error(`Failed to fetch order: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
-
-  return order as any;
 }
 
 export async function getAllOrders(options: {
@@ -300,29 +233,12 @@ export async function getAllOrders(options: {
   limit?: number;
   offset?: number;
 } = {}): Promise<Order[]> {
-  let query = (supabase as any)
-    .from('orders')
-    .select(`*`);
-
-  if (options.status) {
-    (query as any) = (query as any).eq('status', options.status);
+  try {
+    const orders = await apiGetAllOrders(options);
+    return orders || [];
+  } catch (error) {
+    throw new Error(`Failed to fetch orders: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
-
-  if (options.paymentMethod) {
-    (query as any) = (query as any).eq('payment_method', options.paymentMethod);
-  }
-
-  query = query
-    .order('created_at', { ascending: false })
-    .range(options.offset || 0, (options.offset || 0) + (options.limit || 50) - 1);
-
-  const { data: orders, error } = await query;
-
-  if (error) {
-    throw new Error(`Failed to fetch orders: ${error.message}`);
-  }
-
-  return (orders as any[]) || [];
 }
 
 export async function getOrderStatistics(): Promise<{
