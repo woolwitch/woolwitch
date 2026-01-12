@@ -77,27 +77,23 @@ export function Checkout({ onNavigate }: CheckoutProps) {
     postcode: formData.postcode
   });
 
-  // Stripe payment success handler
-  const handleStripeSuccess = async (paymentData: StripePaymentData) => {
+  // Common payment success handler
+  const handlePaymentSuccess = async (
+    paymentMethod: 'card' | 'paypal',
+    paymentId: string,
+    paymentDetails?: any
+  ) => {
     try {
       setPaymentState(prev => ({ ...prev, isProcessing: true, error: null }));
       
-      const stripeDetails: StripeDetails = {
-        payment_intent_id: paymentData.paymentIntentId,
-        payment_method_id: paymentData.paymentMethodId,
-        last_four: paymentData.last4,
-        card_brand: paymentData.brand,
-        // client_secret intentionally excluded - not stored for security
-      };
-
       const orderData: CreateOrderData = {
         email: formData.email,
         fullName: formData.fullName,
         address: getOrderAddress(),
         cartItems: items.map(item => ({ product: item.product, quantity: item.quantity })),
-        paymentMethod: 'card',
-        paymentId: paymentData.paymentIntentId,
-        stripeDetails
+        paymentMethod,
+        paymentId,
+        ...(paymentMethod === 'paypal' ? { paypalDetails: paymentDetails } : { stripeDetails: paymentDetails })
       };
 
       // Validate order data
@@ -114,7 +110,7 @@ export function Checkout({ onNavigate }: CheckoutProps) {
       setCompletedOrderData({ 
         total, 
         email: formData.email, 
-        paymentMethod: 'card' 
+        paymentMethod 
       });
       setIsCompleted(true);
       
@@ -126,10 +122,34 @@ export function Checkout({ onNavigate }: CheckoutProps) {
     }
   };
 
-  // Stripe payment error handler
-  const handleStripeError = (error: string) => {
+  // Stripe payment success handler
+  const handleStripeSuccess = async (paymentData: StripePaymentData) => {
+    const stripeDetails: StripeDetails = {
+      payment_intent_id: paymentData.paymentIntentId,
+      payment_method_id: paymentData.paymentMethodId,
+      last_four: paymentData.last4,
+      card_brand: paymentData.brand,
+      // client_secret intentionally excluded - not stored for security
+    };
+
+    await handlePaymentSuccess('card', paymentData.paymentIntentId, stripeDetails);
+  };
+
+  // PayPal payment success handler
+  const handlePayPalSuccess = async (paymentData: PayPalPaymentData) => {
+    await handlePaymentSuccess('paypal', paymentData.paymentID, paymentData.details);
+  };
+
+  // Common payment error handler
+  const handlePaymentError = (error: string) => {
     setPaymentState(prev => ({ ...prev, error, isProcessing: false }));
   };
+
+  // Stripe payment error handler
+  const handleStripeError = handlePaymentError;
+
+  // PayPal payment error handler
+  const handlePayPalError = handlePaymentError;
 
   // Handle cart cleanup for invalid products
   const handleCartCleanup = async () => {
@@ -153,52 +173,6 @@ export function Checkout({ onNavigate }: CheckoutProps) {
       clearCart();
       onNavigate('shop');
     }
-  };
-
-  // PayPal payment success handler
-  const handlePayPalSuccess = async (paymentData: PayPalPaymentData) => {
-    try {
-      setPaymentState(prev => ({ ...prev, isProcessing: true, error: null }));
-      
-      const orderData: CreateOrderData = {
-        email: formData.email,
-        fullName: formData.fullName,
-        address: getOrderAddress(),
-        cartItems: items.map(item => ({ product: item.product, quantity: item.quantity })),
-        paymentMethod: 'paypal',
-        paymentId: paymentData.paymentID,
-        paypalDetails: paymentData.details
-      };
-
-      // Validate order data
-      const validationErrors = validateOrderData(orderData);
-      if (validationErrors.length > 0) {
-        throw new Error(validationErrors.join(', '));
-      }
-
-      // Create order in database
-      await createOrder(orderData);
-      
-      // Clear cart and show success
-      clearCart();
-      setCompletedOrderData({ 
-        total, 
-        email: formData.email, 
-        paymentMethod: 'paypal' 
-      });
-      setIsCompleted(true);
-      
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Payment processing failed';
-      setPaymentState(prev => ({ ...prev, error: errorMessage }));
-    } finally {
-      setPaymentState(prev => ({ ...prev, isProcessing: false }));
-    }
-  };
-
-  // PayPal payment error handler
-  const handlePayPalError = (error: string) => {
-    setPaymentState(prev => ({ ...prev, error, isProcessing: false }));
   };
 
   if (isCompleted) {

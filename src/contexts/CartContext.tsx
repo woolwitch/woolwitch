@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { validateCartProducts } from '../lib/cartDebug';
+import { calculateSubtotal, calculateDeliveryTotal, calculateTotal } from '../lib/orderService';
 import type { Product } from '../types/database';
 
 export interface CartItem {
@@ -149,9 +150,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-  const deliveryTotal = items.reduce((sum, item) => sum + ((item.product.delivery_charge ?? 0) * item.quantity), 0);
-  const total = subtotal + deliveryTotal;
+  const subtotal = calculateSubtotal(items);
+  const deliveryTotal = calculateDeliveryTotal(items);
+  const total = calculateTotal(items);
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
