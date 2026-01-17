@@ -6,7 +6,8 @@
  */
 
 import React from 'react';
-import { CreditCard } from 'lucide-react';
+// CreditCard icon not needed since card payment is hidden
+// import { CreditCard } from 'lucide-react';
 
 export type PaymentMethod = 'card' | 'paypal';
 
@@ -30,7 +31,8 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
       </h3>
       
       <div className="space-y-3">
-        {/* Card Payment Option */}
+        {/* Card Payment Option - Hidden for now */}
+        {/* TODO: Re-enable when Stripe is ready to be used
         <label 
           className={`
             flex items-center space-x-3 p-4 border-2 rounded-lg cursor-pointer transition-all
@@ -64,7 +66,6 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
             </div>
             
             <div className="flex space-x-1">
-              {/* Card brand icons */}
               <div className="w-8 h-5 bg-gray-100 rounded border text-xs flex items-center justify-center text-gray-600">
                 VISA
               </div>
@@ -74,6 +75,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
             </div>
           </div>
         </label>
+        */}
 
         {/* PayPal Payment Option */}
         <label 
@@ -120,17 +122,10 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
 
       {/* Payment Method Info */}
       <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-        {selectedMethod === 'card' ? (
-          <div className="text-sm text-gray-600">
-            <p className="font-medium mb-1">Secure Card Payment</p>
-            <p>Your card information is encrypted and secure. We don't store your card details.</p>
-          </div>
-        ) : (
-          <div className="text-sm text-gray-600">
-            <p className="font-medium mb-1">PayPal Secure Payment</p>
-            <p>You'll be redirected to PayPal to complete your payment securely. No need to enter card details.</p>
-          </div>
-        )}
+        <div className="text-sm text-gray-600">
+          <p className="font-medium mb-1">PayPal Secure Payment</p>
+          <p>You'll be redirected to PayPal to complete your payment securely. No need to enter card details.</p>
+        </div>
       </div>
     </div>
   );
