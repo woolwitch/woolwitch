@@ -4,9 +4,12 @@ import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import PaymentMethodSelector, { PaymentMethod } from '../components/PaymentMethodSelector';
 import PayPalButton, { PayPalPaymentData } from '../components/PayPalButton';
-import StripeCardPayment from '../components/StripeCardPayment';
+// StripeCardPayment not needed since card payment is hidden
+// import StripeCardPayment from '../components/StripeCardPayment';
 import { createOrder, validateOrderData } from '../lib/orderService';
-import type { OrderAddress, CreateOrderData, StripeDetails } from '../types/database';
+import type { OrderAddress, CreateOrderData } from '../types/database';
+// StripeDetails not needed since card payment is hidden
+// import type { StripeDetails } from '../types/database';
 
 interface CheckoutProps {
   onNavigate: (page: 'shop' | 'cart' | 'checkout') => void;
@@ -20,6 +23,9 @@ interface OrderDetails {
   postcode: string;
 }
 
+// StripePaymentData interface - Not used since card payment is hidden
+// TODO: Re-enable when Stripe is ready to be used
+/*
 interface StripePaymentData {
   paymentIntentId: string;
   paymentMethodId: string;
@@ -27,6 +33,7 @@ interface StripePaymentData {
   brand: string;
   clientSecret: string;
 }
+*/
 
 interface PaymentState {
   method: PaymentMethod;
@@ -47,7 +54,7 @@ export function Checkout({ onNavigate }: CheckoutProps) {
     postcode: '',
   });
   const [paymentState, setPaymentState] = useState<PaymentState>({
-    method: 'card',
+    method: 'paypal', // Default to PayPal since card payment is hidden
     isProcessing: false,
     error: null
   });
@@ -122,7 +129,9 @@ export function Checkout({ onNavigate }: CheckoutProps) {
     }
   };
 
-  // Stripe payment success handler
+  // Stripe payment success handler - Not used since card payment is hidden
+  // TODO: Re-enable when Stripe is ready to be used
+  /*
   const handleStripeSuccess = async (paymentData: StripePaymentData) => {
     const stripeDetails: StripeDetails = {
       payment_intent_id: paymentData.paymentIntentId,
@@ -134,6 +143,7 @@ export function Checkout({ onNavigate }: CheckoutProps) {
 
     await handlePaymentSuccess('card', paymentData.paymentIntentId, stripeDetails);
   };
+  */
 
   // PayPal payment success handler
   const handlePayPalSuccess = async (paymentData: PayPalPaymentData) => {
@@ -145,8 +155,9 @@ export function Checkout({ onNavigate }: CheckoutProps) {
     setPaymentState(prev => ({ ...prev, error, isProcessing: false }));
   };
 
-  // Stripe payment error handler
-  const handleStripeError = handlePaymentError;
+  // Stripe payment error handler - Not used since card payment is hidden
+  // TODO: Re-enable when Stripe is ready to be used
+  // const handleStripeError = handlePaymentError;
 
   // PayPal payment error handler
   const handlePayPalError = handlePaymentError;
@@ -345,10 +356,10 @@ export function Checkout({ onNavigate }: CheckoutProps) {
                   </div>
                 )}
 
-                {/* Card Payment Form */}
+                {/* Card Payment Form - Hidden for now */}
+                {/* TODO: Re-enable when Stripe is ready to be used
                 {paymentState.method === 'card' && (
                   <div className="space-y-4">
-                    {/* Form validation check for Stripe */}
                     {formData.email && formData.fullName && formData.address && formData.city && formData.postcode ? (
                       <StripeCardPayment
                         cartItems={items.map(item => ({ product: item.product, quantity: item.quantity }))}
@@ -371,6 +382,7 @@ export function Checkout({ onNavigate }: CheckoutProps) {
                     )}
                   </div>
                 )}
+                */}
 
                 {/* PayPal Payment */}
                 {paymentState.method === 'paypal' && (
