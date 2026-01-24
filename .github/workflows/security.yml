@@ -97,7 +97,7 @@ jobs:
     - name: Run npm audit (production only)
       run: |
         # Check production dependencies only - fail on high/critical
-        npm audit --production --audit-level=high
+        npm audit --omit=dev --audit-level=high
       
     - name: Run npm audit (all dependencies)
       run: |
@@ -108,7 +108,7 @@ jobs:
     - name: Check for critical vulnerabilities
       run: |
         echo "Checking for critical and high severity vulnerabilities in production..."
-        RESULT=$(npm audit --production --json | jq '.metadata.vulnerabilities | select(.critical > 0 or .high > 0)')
+        RESULT=$(npm audit --omit=dev --json | jq '.metadata.vulnerabilities | select(.critical > 0 or .high > 0)')
         if [ -n "$RESULT" ]; then
           echo "Critical or high severity vulnerabilities found!"
           exit 1

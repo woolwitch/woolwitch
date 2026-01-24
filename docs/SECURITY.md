@@ -894,10 +894,10 @@ permissions:
 Before pushing code, run local security checks:
 
 ```bash
-# NPM audit
-npm audit --production --audit-level=high
+# NPM audit (production dependencies only)
+npm audit --omit=dev --audit-level=high
 
-# Full audit for visibility
+# Full audit for visibility (includes dev dependencies)
 npm audit
 
 # Run linting and type checking
